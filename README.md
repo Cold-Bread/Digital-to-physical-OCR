@@ -25,9 +25,8 @@ npm run dev
 # test endpoints http://localhost:8000/docs
 
 
-
 #run frontend:
 # hosted on http://localhost:5173
 
-#app is hot reload, to see changes run
+#webapp is hot reload, to see changes run 
 # npm run build
