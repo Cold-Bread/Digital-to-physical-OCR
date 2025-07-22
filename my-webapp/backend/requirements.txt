@@ -1,5 +1,5 @@
 fastapi
 uvicorn
 pydantic
-sqlite3 ; this is built-in with Python, so not required
-python-multipart ; if you want file uploads
+python-multipart ; 
+#if you want file uploads

@@ -1,3 +1,6 @@
+# my-webapp/backend/crud.py
+# where you do gets/posts to the database
+
 from database import get_db
 
 def insert_patient(patient):
