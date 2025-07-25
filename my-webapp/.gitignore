@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environments
+# Ignore any 'venv*' folder inside backend2
+/backend2/**/venv*/
