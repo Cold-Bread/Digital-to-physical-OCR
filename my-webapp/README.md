@@ -78,7 +78,44 @@ A virtual environment (`venv`) is used to keep this project's Python dependencie
 
 | Task             | Command                                      |
 |------------------|----------------------------------------------|
-| Start Backend    | `uvicorn backend.main:app --reload`          |
+| Start Backend    | `uvicorn main:app --reload`          |
 | Start Frontend   | `cd frontend && npm run dev`                 |
 | Build Frontend   | `npm run build` (from `frontend` folder)     |
 
+go to https://www.python.org/downloads/windows/
+ctrl+f 3.10.11
+install 64-bit, add to path option, check version afterwards
+
+if version doesnt work use to specify location directly
+"C:\Users\Jacob\AppData\Local\Programs\Python\Python310\python.exe" -m venv venvTrOCR310
+"C:\Users\Jacob\AppData\Local\Programs\Python\Python310\python.exe" -m venv venvPaddle310
+follow this path on your computer
+
+enter new venv - idk how to add venv folder to .gitignore
+venv310\Scripts\activate
+
+make sure to swap interprter on vscode as well, bottom right corner
+
+upgrade pip
+pip install --upgrade pip
+
+cd to backend
+cd backend
+
+run command to download updated requirements.txt with specifc versions of pytorch and paddle
+pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118
+
+then run
+pip install paddlepaddle-gpu==2.5.0.post118 -f https://www.paddlepaddle.org.cn/whl/windows/mkl/avx/stable.html
+pip install paddleocr
+
+check if paddle installed correctly, should return 2.5.0
+python -c "import paddle; print(paddle.__version__)"
+
+cuda 11.8 download link
+https://developer.nvidia.com/cuda-11-8-0-download-archive?target_os=Windows&target_arch=x86_64&target_version=11&target_type=exe_local
+
+Jacobs Commands for venv 3.11 -- old:
+cd Downloads\OCR\Digital-to-physical-OCR\my-webapp\backend
+venv310\Scripts\activate
+uvicorn main:app --reload
