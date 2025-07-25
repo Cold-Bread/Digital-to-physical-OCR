@@ -1,0 +1,5 @@
+# FastAPI backend
+fastapi
+uvicorn[standard]
+requests
+python-multipart
