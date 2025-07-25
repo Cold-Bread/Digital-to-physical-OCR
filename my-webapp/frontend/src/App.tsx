@@ -1,5 +1,5 @@
-import ImageViewer from "./components/imageViewer";
 import ButtonRow from "./components/controlPanel";
+import ImageViewer from "./components/imageViewer";
 
 function App() {
 	return (

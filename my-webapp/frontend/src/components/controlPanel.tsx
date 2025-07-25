@@ -1,35 +1,58 @@
-function controlPanel() {
-	// Placeholder function for button click handler
-	const handleButtonClick = (buttonNumber) => {
-		console.log(`Button ${buttonNumber} clicked`);
+import { usePatientStore } from "../store/globalStore";
+
+function ControlPanel() {
+	const { ocrOutput, editableText, setEditableText, resetEditableText } =
+		usePatientStore();
+
+	const handleFieldChange = (key: keyof typeof editableText, value: string) => {
+		setEditableText({ ...editableText, [key]: value });
 	};
-	const undo = (buttonNumber) => {
-		console.log(`Button ${buttonNumber} clicked`);
+
+	const send = () => {
+		// send editableText to backend here
+		console.log("Sending patient data:", editableText);
 	};
+
 	return (
 		<div className="button-Bar">
 			<>
-				<button id="undo" className="button" onClick={() => undo(1)}>
+				<button id="undo" className="button" onClick={resetEditableText}>
 					Undo
 				</button>
-				<button className="button" onClick={() => handleButtonClick(2)}>
-					Button 2
+				<button className="button" onClick={() => console.log("Unused")}>
+					Go!
 				</button>
-				<button
-					id="send"
-					className="button"
-					onClick={() => handleButtonClick(3)}
-				>
+				<button id="send" className="button" onClick={send}>
 					Send
 				</button>
-				{/* will be filled with the OCR output that you can edit while looking at
-				the images and ai output */}
-				<textarea id="editOutput" className="textbox" placeholder="Editiable" />
-				{/* static output from the AI, unchangeable by the user */}
-				<textarea id="AiOutput" className="textbox" placeholder="Ai output" />
 			</>
+
+			<div className="textboxes">
+				<div className="text-block">
+					<label>Original Text</label>
+					<textarea
+						className="textbox"
+						readOnly
+						value={Object.entries(ocrOutput)
+							.map(([k, v]) => `${k}: ${v}`)
+							.join("\n")}
+					/>
+				</div>
+				<div className="text-block">
+					<label>Corrected Text</label>
+					<textarea
+						className="textbox"
+						value={Object.entries(editableText)
+							.map(([k, v]) => `${k}: ${v}`)
+							.join("\n")}
+						onChange={(e) => {
+							// Optional: handle bulk changes (if user edits raw text)
+						}}
+					/>
+				</div>
+			</div>
 		</div>
 	);
 }
 
-export default controlPanel;
+export default ControlPanel;

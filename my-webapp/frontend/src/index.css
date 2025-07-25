@@ -26,7 +26,7 @@ body {
 /* ImageContainer */
 .img-container {
 	display: flex;
-	gap: 2rem; /* space between the two image blocks */
+	gap: 2rem;
 	justify-content: center;
 	align-items: flex-start;
 	padding: 1rem;
@@ -43,14 +43,31 @@ body {
 	margin-bottom: 1rem;
 }
 
-/* Textbox */
+.textboxes {
+	display: flex;
+	gap: 2rem;
+	justify-content: center;
+	align-items: flex-start;
+	padding: 1rem;
+}
+
+.text-block {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
 .textbox {
-	width: 100%;
-	max-width: 600px;
-	padding: 10px;
+	width: 250px;
+	height: 250px;
+	resize: none;
+	font-family: monospace;
+	font-size: 1rem;
+	padding: 0.75rem;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+	border-radius: 8px;
 	border: 1px solid #ccc;
-	border-radius: 4px;
-	font-size: 16px;
+	background-color: #f9f9f9;
 }
 
 /* Button */
