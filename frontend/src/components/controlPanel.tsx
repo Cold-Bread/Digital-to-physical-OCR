@@ -1,58 +1,71 @@
-import { usePatientStore } from "../store/globalStore";
+import { useState } from "react";
+import { useOCRStore } from "../store/useOCRStore";
 
-function ControlPanel() {
-	const { ocrOutput, editableText, setEditableText, resetEditableText } =
-		usePatientStore();
+const ControlPanel = () => {
+	const [jsonPreview, setJsonPreview] = useState({});
+	const {
+		editableText,
+		setEditableText,
+		resetAll,
+		finalOutput,
+		setFinalOutput,
+	} = useOCRStore();
 
-	const handleFieldChange = (key: keyof typeof editableText, value: string) => {
-		setEditableText({ ...editableText, [key]: value });
+	const handleSubmit = async () => {
+		if (!editableText.trim()) return;
+
+		try {
+			const response = await fetch("http://localhost:8000/add_patient", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ final_data: editableText }),
+			});
+
+			if (response.ok) {
+				alert("Data submitted successfully!");
+				resetAll();
+			} else {
+				alert("Submission failed.");
+			}
+		} catch (error) {
+			console.error("Submission error:", error);
+			alert("Submission error. See console.");
+		}
 	};
 
-	const send = () => {
-		// send editableText to backend here
-		console.log("Sending patient data:", editableText);
+	const simulateLLMOutput = () => {
+		const sample = "Name: John Doe\nDOB: 01/01/1970\nLast Visit: 06/15/2024";
+		setFinalOutput(sample); // Save the original
+		setEditableText(sample); // Set the editable version
 	};
 
 	return (
-		<div className="button-Bar">
-			<>
-				<button id="undo" className="button" onClick={resetEditableText}>
-					Undo
+		<div className="control-panel">
+			<div className="button-group">
+				<button className="button" onClick={simulateLLMOutput}>
+					Run Pipeline
 				</button>
-				<button className="button" onClick={() => console.log("Unused")}>
-					Go!
+				<button className="button" onClick={handleSubmit}>
+					Submit
 				</button>
-				<button id="send" className="button" onClick={send}>
-					Send
-				</button>
-			</>
+			</div>
 
-			<div className="textboxes">
-				<div className="text-block">
-					<label>Original Text</label>
-					<textarea
-						className="textbox"
-						readOnly
-						value={Object.entries(ocrOutput)
-							.map(([k, v]) => `${k}: ${v}`)
-							.join("\n")}
-					/>
-				</div>
-				<div className="text-block">
-					<label>Corrected Text</label>
-					<textarea
-						className="textbox"
-						value={Object.entries(editableText)
-							.map(([k, v]) => `${k}: ${v}`)
-							.join("\n")}
-						onChange={(e) => {
-							// Optional: handle bulk changes (if user edits raw text)
-						}}
-					/>
-				</div>
+			<div className="textarea-row">
+				<textarea
+					className="textbox"
+					value={editableText}
+					onChange={(e) => setEditableText(e.target.value)}
+				/>
+				<textarea className="textbox" value={finalOutput} readOnly />
+			</div>
+
+			<div className="json-preview">
+				<pre>{JSON.stringify(jsonPreview, null, 2)}</pre>
 			</div>
 		</div>
 	);
-}
+};
 
 export default ControlPanel;
