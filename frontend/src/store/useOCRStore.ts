@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { BackendResponse } from "../types/types";
+import { BackendResponse } from "../types/backendResponse";
 
 interface OCRStore {
 	// Original backend response

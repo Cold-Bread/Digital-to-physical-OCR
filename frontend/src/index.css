@@ -6,18 +6,16 @@
 	color: rgba(255, 255, 255, 0.95);
 	background-color: #1e1e1e;
 	margin: 0 auto;
-	padding: 10px;
+	padding: 0;
 	text-align: center;
 }
 
 /* === Base Resets === */
 body {
 	margin: 0;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
 	min-width: 320px;
 	min-height: 100vh;
+	background: #1e1e1e;
 }
 
 /* === Layout Containers === */
@@ -146,9 +144,110 @@ body {
 }
 
 /* === Layout Containers === */
+
 .main-container {
-	padding: 10px;
-	background-color: black;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	background: #1e1e1e;
+}
+
+.outputs-area {
+	flex: 1;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: flex-start;
+	padding: 40px 0 80px 0;
+}
+
+.outputs-container {
+	display: flex;
+	flex-direction: row;
+	gap: 40px;
+	width: 100vw;
+	justify-content: center;
+}
+
+.main-table-container,
+.side-table-container {
+	background: #232323;
+	border-radius: 10px;
+	padding: 20px;
+	box-shadow: 0 2px 8px #0006;
+}
+
+.main-table,
+.side-table {
+	border-collapse: collapse;
+	width: 100%;
+	min-width: 350px;
+}
+
+.main-table th,
+.main-table td,
+.side-table th,
+.side-table td {
+	border: 1px solid #444;
+	padding: 8px 12px;
+	text-align: left;
+}
+
+.main-table th,
+.side-table th {
+	background: #333;
+	color: #fff;
+}
+
+.row-no-match {
+	background: #ffcccc !important;
+}
+
+/* Bottom control panel bar */
+.control-panel-bottom {
+	position: fixed;
+	left: 0;
+	bottom: 0;
+	width: 100vw;
+	background: #181818;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	padding: 18px 0 18px 0;
+	box-shadow: 0 -2px 8px #0008;
+	z-index: 100;
+}
+
+.box-input {
+	padding: 8px 12px;
+	border-radius: 6px;
+	border: 1px solid #444;
+	font-size: 1rem;
+	background: #232323;
+	color: #fff;
+	width: 160px;
+}
+
+.button {
+	background-color: #4caf50;
+	border: none;
+	color: white;
+	padding: 12px 24px;
+	font-size: 1rem;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 600;
+	transition: background-color 0.2s ease-in-out;
+}
+.button:hover {
+	background-color: #43a047;
+}
+.button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 .content-layout {

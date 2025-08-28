@@ -1,69 +1,42 @@
-import { useState } from "react";
-import { useOCRStore } from "../store/useOCRStore";
+import { useRef, useState } from "react";
 
 const ControlPanel = () => {
-	const [jsonPreview, setJsonPreview] = useState({});
-	const {
-		editableText,
-		setEditableText,
-		resetAll,
-		finalOutput,
-		setFinalOutput,
-	} = useOCRStore();
+	const [boxNumber, setBoxNumber] = useState("");
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const handleSubmit = async () => {
-		if (!editableText.trim()) return;
-
-		try {
-			const response = await fetch("http://localhost:8000/add_patient", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ final_data: editableText }),
-			});
-
-			if (response.ok) {
-				alert("Data submitted successfully!");
-				resetAll();
-			} else {
-				alert("Submission failed.");
-			}
-		} catch (error) {
-			console.error("Submission error:", error);
-			alert("Submission error. See console.");
-		}
-	};
-
-	const simulateLLMOutput = () => {
-		const sample = "Name: John Doe\nDOB: 01/01/1970\nLast Visit: 06/15/2024";
-		setFinalOutput(sample); // Save the original
-		setEditableText(sample); // Set the editable version
+	// Placeholder: implement these handlers to update tables in App
+	const handleSend = () => {
+		// TODO: send boxNumber and file to backend, update tables
+		alert(`Send: Box #${boxNumber}, File: ${selectedFile?.name || "none"}`);
 	};
 
 	return (
-		<div className="control-panel">
-			<div className="button-group">
-				<button className="button" onClick={simulateLLMOutput}>
-					Run Pipeline
-				</button>
-				<button className="button" onClick={handleSubmit}>
-					Submit
-				</button>
-			</div>
-
-			<div className="textarea-row">
-				<textarea
-					className="textbox"
-					value={editableText}
-					onChange={(e) => setEditableText(e.target.value)}
-				/>
-				<textarea className="textbox" value={finalOutput} readOnly />
-			</div>
-
-			<div className="json-preview">
-				<pre>{JSON.stringify(jsonPreview, null, 2)}</pre>
-			</div>
+		<div className="control-panel control-panel-bottom">
+			<input
+				type="text"
+				className="box-input"
+				placeholder="Box Number"
+				value={boxNumber}
+				onChange={(e) => setBoxNumber(e.target.value)}
+			/>
+			<input
+				type="file"
+				accept="image/*"
+				ref={fileInputRef}
+				style={{ display: "none" }}
+				onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+			/>
+			<button className="button" onClick={() => fileInputRef.current?.click()}>
+				{selectedFile ? selectedFile.name : "Choose File"}
+			</button>
+			<button
+				className="button"
+				onClick={handleSend}
+				disabled={!boxNumber || !selectedFile}
+			>
+				Send
+			</button>
 		</div>
 	);
 };
