@@ -2,12 +2,6 @@
 # This file should be placed in the root of the project.
 
 # Directories
-.venv/
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
 */__pycache__/
 *.egg-info/
 *.pytest_cache/

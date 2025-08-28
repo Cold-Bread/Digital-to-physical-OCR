@@ -1,5 +1,9 @@
 import sqlite3
 
+"""
+This is only to be used if entering data into the excel sheet
+"""
+
 DATABASE_NAME = "patients.db"
 
 
