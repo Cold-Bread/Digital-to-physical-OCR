@@ -1,23 +1,19 @@
 import ControlPanel from "./components/controlPanel";
 import OCROutputs from "./components/OCROutputs";
-import { useState } from "react";
-
-// Placeholder: these would come from API/database/LLM
-const mockMainTable = [];
-const mockSideTable = [];
+import { useOCRStore } from "./store/useOCRStore";
 
 function App() {
-	// In real app, fetch and set these from backend/LLM
-	const [mainTableData, setMainTableData] = useState(mockMainTable);
-	const [sideTableData, setSideTableData] = useState(mockSideTable);
+	// Use global state for table data
+	const patientList = useOCRStore((s) => s.patientList);
+	const ocrResponse = useOCRStore((s) => s.ocrResponse);
+	const sideTableData = ocrResponse?.finalResult
+		? [ocrResponse.finalResult]
+		: [];
 
 	return (
 		<div className="main-container">
 			<div className="outputs-area">
-				<OCROutputs
-					mainTableData={mainTableData}
-					sideTableData={sideTableData}
-				/>
+				<OCROutputs mainTableData={patientList} sideTableData={sideTableData} />
 			</div>
 			<ControlPanel />
 		</div>
