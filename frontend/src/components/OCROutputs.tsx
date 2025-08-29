@@ -1,5 +1,3 @@
-import { useOCRStore } from "../store/useOCRStore";
-
 // This will be the new OCR outputs and LLM output table component
 const OCROutputs = ({
 	mainTableData,

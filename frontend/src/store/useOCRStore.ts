@@ -2,9 +2,13 @@ import { create } from "zustand";
 import { BackendResponse } from "../types/backendResponse";
 
 interface OCRStore {
-	// Original backend response
-	response: BackendResponse | null;
-	setResponse: (resp: BackendResponse) => void;
+	// OCR and LLM response
+	ocrResponse: BackendResponse | null;
+	setOCRResponse: (resp: BackendResponse) => void;
+
+	// Patient list response
+	patientList: any[];
+	setPatientList: (list: any[]) => void;
 
 	// Editable text from LLM
 	editableText: string;
@@ -24,20 +28,16 @@ interface OCRStore {
 	finalOutput: string;
 	setFinalOutput: (text: string) => void;
 
-	// Image blobs
-	originalImage: string | null;
-	setOriginalImage: (img: string | null) => void;
-
-	enhancedImage: string | null;
-	setEnhancedImage: (img: string | null) => void;
-
 	// Reset function for zero-state
 	resetAll: () => void;
 }
 
 export const useOCRStore = create<OCRStore>((set) => ({
-	response: null,
-	setResponse: (resp) => set({ response: resp }),
+	ocrResponse: null,
+	setOCRResponse: (resp) => set({ ocrResponse: resp }),
+
+	patientList: [],
+	setPatientList: (list) => set({ patientList: list }),
 
 	editableText: "",
 	setEditableText: (text) => set({ editableText: text }),
@@ -54,21 +54,14 @@ export const useOCRStore = create<OCRStore>((set) => ({
 	finalOutput: "Sample LLM Final Output",
 	setFinalOutput: (text) => set({ finalOutput: text }),
 
-	originalImage: null,
-	setOriginalImage: (img) => set({ originalImage: img }),
-
-	enhancedImage: null,
-	setEnhancedImage: (img) => set({ enhancedImage: img }),
-
 	resetAll: () =>
 		set({
-			response: null,
+			ocrResponse: null,
+			patientList: [],
 			editableText: "Sample Editable LLM Output",
 			ocr1: "Sample OCR Output 1",
 			ocr2: "Sample OCR Output 2",
 			ocr3: "Sample OCR Output 3",
 			finalOutput: "Sample LLM Final Output",
-			originalImage: null,
-			enhancedImage: null,
 		}),
 }));
