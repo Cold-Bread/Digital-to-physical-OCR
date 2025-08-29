@@ -1,20 +1,19 @@
 export interface OCRResult {
 	name: string;
-	dob: string;
-	last_visit: string;
+	dob: string | null;
 }
 
 export interface Patient extends OCRResult {
-	taken_from: string;
-	placed_in: string;
-	to_shred: boolean;
-	date_shredded: string;
+	year_joined: number;
+	last_dos: number;
+	shred_year: number;
+	is_child_when_joined: number;
+	box_number: string;
 }
 
 export interface BackendResponse {
-	ocr1: OCRResult;
-	ocr2: OCRResult;
-	ocr3: OCRResult;
+	ocr1: OCRResult[];
+	ocr2: OCRResult[];
+	ocr3: OCRResult[];
 	finalResult: OCRResult;
-	patient: Patient;
 }
