@@ -1,0 +1,77 @@
+
+# These are the new interfaces for the frontend
+export interface OCRResult {
+	name: string;
+	dob: string;   (can be null)
+}
+
+export interface Patient extends OCRResult {
+	taken_from: string;     (these are the column names of the excel sheet)
+	placed_in: string;
+	to_shred: boolean;
+	date_shredded: string;
+}
+
+export interface BackendResponse {
+	ocr1: OCRResult[];
+	ocr2: OCRResult[];
+	ocr3: OCRResult[];
+	finalResult: OCRResult;
+}
+
+Excel columns top->Down, Left->Right
+I need to pull a set of rows based on the box ID (given) into a interal database to run comparisons off of to then update info if needed
+
+chart  (this is box number, use to_upper on api payload for consistency)
+Patient Name: String
+DOB: String
+Year Joined: Int
+Last DOS: Int
+Shred Year: Int
+IsChildWhenJoined: Int
+
+
+** I need to pull data from the excel sheet based on which box were using
+database.py - only if we are adding things to the excel sheet, (a internal database)
+
+
+jordan runs 1 wrapper function that returns a tuple of the results of each ocr's true results (run through fuzzy search as well)
+
+** Need to add macro in excel to auto check the boxes
+
+
+
+
+order of api calls:
+- On webapp type in box number, push sendBOXID
+--> Backend runs a sql query for relevant rows in excel 
+--> Takes rows, store in database.DOB
+
+- Frontend send a image that has file names/dob's
+--> Run image through all OCRs
+--> Do processes that increase cofindence in results
+--> Package list of names, with DOB's and return to frontend
+
+- User edits possible errors, pushes submitTABLE
+--> backend gets object, and puts into datbase.db (already formated correctly)
+
+example: 
+def function{
+    OCRResult response1 = await ocr1()
+    OCRResult response2 = await ocr2()
+
+    return response1, response2
+}
+
+... (Do processes that increase cofindence in results)
+
+def finalOCRResult{
+    Package list of names, with DOB's and send to jordan
+}
+
+
+Chatgpt prompt
+
+Can you edit the backend2 folder to follow the list of api calls specified in plan.txt
+
+Edit backendResponse.txt to have the new interface objects

@@ -3,3 +3,7 @@ fastapi
 uvicorn[standard]
 requests
 python-multipart
+pandas
+openpyxl  # For Excel file handling
+pydantic
+python-Levenshtein  # For fuzzy string matching
