@@ -1,7 +1,8 @@
 import logging
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from routes.ocr_routes import router as ocr_router
+from main_app.routes.ocr_routes import router as ocr_router
+#from main_app.routes.main_routes import router as user_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

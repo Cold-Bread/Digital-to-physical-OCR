@@ -1,5 +1,5 @@
-from database import get_connection
-from models import Patient
+from main_app.database import get_connection
+from main_app.models import Patient
 
 def insert_patient(patient: Patient):
     conn = get_connection()

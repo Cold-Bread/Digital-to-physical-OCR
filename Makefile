@@ -1,6 +1,6 @@
 .PHONY: all main paddle trocr clean
 
-PYTHON := "C:\Users\Jacob\AppData\Local\Programs\Python\Python310\python.exe"
+PYTHON := "C:\Users\jreed\AppData\Local\Programs\Python\Python311\python.exe"
 
 # Full paths to each component
 MAIN_DIR := backend2/main_app

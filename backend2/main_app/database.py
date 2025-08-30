@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List
-from models import Patient
+from main_app.models import Patient
 
 EXCEL_PATH = "path/to/your/excel/file.xlsx"  # Update this with your Excel file path
 
