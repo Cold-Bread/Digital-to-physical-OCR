@@ -1,6 +1,17 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from googleapiclient.discovery_cache.base import Cache
 import os
+
+# Disable file cache to prevent the warning message
+class MemoryCache(Cache):
+    _CACHE = {}
+
+    def get(self, url):
+        return MemoryCache._CACHE.get(url)
+
+    def set(self, url, content):
+        MemoryCache._CACHE[url] = content
 
 # Update these constants with your values
 SPREADSHEET_ID = '1_gLQUeWhE6QamZY0CV-n7P06dzq7zRTzTYDPfXvjqC0'  # Get this from your Google Sheets URL
@@ -13,7 +24,8 @@ def get_sheets_service():
         credentials = service_account.Credentials.from_service_account_file(
             CREDENTIALS_FILE, scopes=SCOPES
         )
-        service = build('sheets', 'v4', credentials=credentials)
+        # Use memory cache instead of file cache
+        service = build('sheets', 'v4', credentials=credentials, cache=MemoryCache())
         return service.spreadsheets()
     except Exception as e:
         print(f"Error creating sheets service: {e}")

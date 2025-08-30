@@ -1,75 +1,214 @@
 import { useRef, useState } from "react";
 import { useOCRStore } from "../store/useOCRStore";
+import { BackendResponse, BoxResponse } from "../types/backendResponse";
 
-const ControlPanel = () => {
-	const [boxNumber, setBoxNumber] = useState("");
-	const [selectedFile, setSelectedFile] = useState<File | null>(null);
-	const [loading, setLoading] = useState(false);
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const setOCRResponse = useOCRStore((s) => s.setOCRResponse);
-	const setPatientList = useOCRStore((s) => s.setPatientList);
-
-	const handleSend = async () => {
-		if (!boxNumber || !selectedFile) return;
-		setLoading(true);
-		try {
-			// 1. Get patients by box number
-			const boxRes = await fetch(`http://localhost:8000/box/${boxNumber}`, {
-				method: "POST",
-			});
-			const patients = await boxRes.json();
-			setPatientList(patients);
-
-			// 2. Send image to /process-image
-			const formData = new FormData();
-			formData.append("file", selectedFile);
-			const ocrRes = await fetch("http://localhost:8000/process-image", {
-				method: "POST",
-				body: formData,
-			});
-			const ocrData = await ocrRes.json();
-			setOCRResponse(ocrData);
-		} catch (err) {
-			alert("Error processing request. See console.");
-			console.error(err);
-		}
-		setLoading(false);
-	};
-
-	return (
-		<div className="control-panel control-panel-bottom">
-			<input
-				type="text"
-				className="box-input"
-				placeholder="Box Number"
-				value={boxNumber}
-				onChange={(e) => setBoxNumber(e.target.value)}
-				disabled={loading}
-			/>
-			<input
-				type="file"
-				accept="image/*"
-				ref={fileInputRef}
-				style={{ display: "none" }}
-				onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-				disabled={loading}
-			/>
-			<button
-				className="button"
-				onClick={() => fileInputRef.current?.click()}
-				disabled={loading}
-			>
-				{selectedFile ? selectedFile.name : "Choose File"}
-			</button>
-			<button
-				className="button"
-				onClick={handleSend}
-				disabled={!boxNumber || !selectedFile || loading}
-			>
-				{loading ? "Processing..." : "Send"}
-			</button>
-		</div>
-	);
+// API endpoints configuration
+const API_BASE_URL = "http://localhost:8000";
+const API_ENDPOINTS = {
+    BOX: (boxNumber: string) => `${API_BASE_URL}/box/${boxNumber}`,
+    PROCESS_IMAGE: `${API_BASE_URL}/process-image`,
+    UPDATE_RECORDS: `${API_BASE_URL}/update-records`
 };
+
+interface ControlPanelProps {
+    selectedFile: File | null;
+    onFileSelect: (file: File | null) => void;
+}
+
+const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
+    const [boxNumber, setBoxNumber] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    
+    const setOCRResponse = useOCRStore((s) => s.setOCRResponse);
+    const setPatientList = useOCRStore((s) => s.setPatientList);
+    const setIsLoading = useOCRStore((s) => s.setIsLoading);
+    const isLoading = useOCRStore((s) => s.isLoading);
+    const undo = useOCRStore((s) => s.undo);
+    const undoAll = useOCRStore((s) => s.undoAll);
+    const history = useOCRStore((s) => s.history);
+    const patientList = useOCRStore((s) => s.patientList);
+
+    const handleSaveToSheet = async () => {
+        if (patientList.length === 0) {
+            alert("No records to save");
+            return;
+        }
+        
+        setIsLoading(true);
+        try {
+            // Get the current box number from the first patient
+            const currentBoxNumber = patientList[0]?.box_number;
+            
+            // Save the records
+            const response = await fetch(API_ENDPOINTS.UPDATE_RECORDS, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(patientList),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to save: ${response.statusText}`);
+            }
+
+            // If we have a box number, refresh the data for that box
+            if (currentBoxNumber) {
+                console.log('Refreshing box data...');
+                const boxRes = await fetch(API_ENDPOINTS.BOX(currentBoxNumber), {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!boxRes.ok) {
+                    throw new Error(`Failed to refresh box data: ${boxRes.statusText}`);
+                }
+
+                const updatedPatients = await boxRes.json();
+                setPatientList(updatedPatients);
+                alert("Records saved successfully! Data has been refreshed.");
+            } else {
+                // If no box number, just clear the state
+                setPatientList([]);
+                setOCRResponse(null);
+                alert("Records saved successfully!");
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+            alert(`Error saving records: ${errorMessage}`);
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSend = async () => {
+        if (!boxNumber || !selectedFile) return;
+        console.log('Starting request with:', { boxNumber, fileName: selectedFile.name });
+        setIsLoading(true);
+        
+        try {
+            // 1. Get patients by box number
+            console.log('Fetching box data...');
+            const boxRes = await fetch(API_ENDPOINTS.BOX(boxNumber), {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!boxRes.ok) {
+                throw new Error(`Box search failed: ${boxRes.statusText}`);
+            }
+
+            const patients: BoxResponse = await boxRes.json();
+            console.log('Received box data:', patients);
+            setPatientList(patients);
+
+            // 2. Send image to /process-image
+            console.log('Processing image...');
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+            
+            const ocrRes = await fetch(API_ENDPOINTS.PROCESS_IMAGE, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!ocrRes.ok) {
+                throw new Error(`OCR processing failed: ${ocrRes.statusText}`);
+            }
+
+            const ocrData: BackendResponse = await ocrRes.json();
+            console.log('Received OCR data:', ocrData);
+            setOCRResponse(ocrData);
+            
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+            alert(`Error: ${errorMessage}`);
+            console.error(err);
+            // Reset the store on error
+            setPatientList([]);
+            setOCRResponse(null);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.type.startsWith("image/")) {
+                onFileSelect(file);
+            } else {
+                alert("Please select an image file");
+                e.target.value = "";
+            }
+        }
+    };
+
+    return (
+        <div className="control-panel control-panel-bottom">
+            <input
+                type="text"
+                className="box-input"
+                placeholder="Enter Box Number (e.g., TCBOX77)"
+                value={boxNumber}
+                onChange={(e) => setBoxNumber(e.target.value.toUpperCase())}
+                disabled={isLoading}
+            />
+            <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+                disabled={isLoading}
+            />
+            <button
+                className="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+            >
+                {selectedFile ? selectedFile.name : "Choose Image"}
+            </button>
+            <button
+                className="button"
+                onClick={handleSend}
+                disabled={!boxNumber || !selectedFile || isLoading}
+            >
+                {isLoading ? "Processing..." : "Send"}
+            </button>
+            <div className="divider"></div>
+            <button
+                className="button secondary"
+                onClick={undo}
+                disabled={isLoading || history.length <= 1}
+            >
+                Undo
+            </button>
+            <button
+                className="button secondary"
+                onClick={undoAll}
+                disabled={isLoading || history.length <= 1}
+            >
+                Undo All
+            </button>
+            <div className="divider"></div>
+            <button
+                className="button primary"
+                onClick={handleSaveToSheet}
+                disabled={isLoading || patientList.length === 0}
+            >
+                Save to Sheet
+            </button>
+        </div>
+    );
+};
+
 
 export default ControlPanel;

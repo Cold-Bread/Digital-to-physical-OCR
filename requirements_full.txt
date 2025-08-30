@@ -1,15 +1,27 @@
-# Full Project Dependencies Overview (not for installation)
+# Full Project Dependencies Overview
 
-# main_app/requirements.txt
-fastapi
-uvicorn[standard]
-requests
-python-multipart
-pandas
-openpyxl
-pydantic
-python-Levenshtein
+# Main FastAPI backend requirements
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+requests>=2.31.0
+python-multipart>=0.0.6
+pandas>=2.1.0
+pydantic>=2.4.2
+python-Levenshtein>=0.23.0  # For fuzzy string matching
 
-# ocr_paddle_service/requirements.txt
-FastAPI
-uvicorn[standard]
+# Google API client libraries
+google-api-python-client>=2.108.0
+google-auth>=2.23.0 
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# PaddleOCR service requirements
+paddlepaddle-gpu>=3.1.0  # Remove if not using GPU
+# paddlepaddle>=3.1.0  # Uncomment for CPU version
+paddleocr>=3.2.0
+opencv-python-headless>=4.8.0
+numpy>=1.24.0
+
+# Common dependencies
+pillow>=10.0.0  # For image processing
+python-dotenv>=1.0.0  # For environment variables

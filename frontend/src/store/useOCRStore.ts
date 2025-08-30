@@ -1,54 +1,105 @@
 import { create } from "zustand";
-import { BackendResponse } from "../types/backendResponse";
+import { BackendResponse, BoxResponse, Patient } from "../types/backendResponse";
 
-type TextType = 'printed' | 'handwritten';
+type EditHistory = {
+    patientList: BoxResponse;
+    timestamp: number;
+};
 
 interface OCRStore {
-	// Text type toggle
-	textType: TextType;
-	setTextType: (type: TextType) => void;
+    // OCR results from image processing
+    ocrResponse: BackendResponse | null;
+    setOCRResponse: (resp: BackendResponse | null) => void;
 
-	// OCR and LLM response
-	ocrResponse: BackendResponse | null;
-	setOCRResponse: (resp: BackendResponse) => void;
+    // Patient list response from box search
+    patientList: BoxResponse;
+    setPatientList: (list: BoxResponse) => void;
+    updatePatient: (index: number, updatedPatient: Patient) => void;
 
-	// Patient list response
-	patientList: any[];
-	setPatientList: (list: any[]) => void;
+    // Edit history
+    history: EditHistory[];
+    addToHistory: (list: BoxResponse) => void;
+    undo: () => void;
+    undoAll: () => void;
 
-	// Editable text from LLM
-	editableText: string;
-	setEditableText: (text: string) => void;
+    // Loading state
+    isLoading: boolean;
+    setIsLoading: (loading: boolean) => void;
 
-	// OCR text outputs
-	ocr1: string;
-	setOCR1: (text: string) => void;
-
-	// Reset function for zero-state
-	resetAll: () => void;
+    // Reset function for zero-state
+    resetAll: () => void;
 }
 
-export const useOCRStore = create<OCRStore>((set) => ({
-	textType: 'printed',
-	setTextType: (type) => set({ textType: type }),
+export const useOCRStore = create<OCRStore>((set, get) => ({
+    ocrResponse: null,
+    setOCRResponse: (resp) => {
+        console.log('Setting OCR Response:', resp);
+        set({ ocrResponse: resp });
+    },
 
-	ocrResponse: null,
-	setOCRResponse: (resp) => set({ ocrResponse: resp }),
+    patientList: [],
+    setPatientList: (list) => {
+        console.log('Setting Patient List:', list);
+        set({ patientList: list });
+        get().addToHistory(list);
+    },
+    updatePatient: (index, updatedPatient) => {
+        console.log('Updating Patient:', { index, updatedPatient });
+        const currentList = [...get().patientList];
+        currentList[index] = updatedPatient;
+        set({ patientList: currentList });
+        get().addToHistory(currentList);
+    },
 
-	patientList: [],
-	setPatientList: (list) => set({ patientList: list }),
+    history: [],
+    addToHistory: (list) => {
+        console.log('Adding to history');
+        const currentHistory = get().history;
+        set({
+            history: [...currentHistory, {
+                patientList: JSON.parse(JSON.stringify(list)),
+                timestamp: Date.now()
+            }]
+        });
+    },
+    undo: () => {
+        console.log('Undoing last change');
+        const currentHistory = get().history;
+        if (currentHistory.length > 1) {
+            const newHistory = [...currentHistory];
+            newHistory.pop(); // Remove current state
+            const previousState = newHistory[newHistory.length - 1];
+            set({
+                patientList: previousState.patientList,
+                history: newHistory
+            });
+        }
+    },
+    undoAll: () => {
+        console.log('Undoing all changes');
+        const currentHistory = get().history;
+        if (currentHistory.length > 1) {
+            const initialState = currentHistory[0];
+            set({
+                patientList: initialState.patientList,
+                history: [initialState]
+            });
+        }
+    },
 
-	editableText: "",
-	setEditableText: (text) => set({ editableText: text }),
+    isLoading: false,
+    setIsLoading: (loading) => {
+        console.log('Setting Loading State:', loading);
+        set({ isLoading: loading });
+    },
 
-	ocr1: "Sample OCR Output 1",
-	setOCR1: (text) => set({ ocr1: text }),
-
-	resetAll: () =>
-		set({
-			ocrResponse: null,
-			patientList: [],
-			editableText: "Sample Editable LLM Output",
-			ocr1: "Sample OCR Output 1",
-		}),
+    resetAll: () => {
+        console.log('Resetting Store');
+        set({
+            ocrResponse: null,
+            patientList: [],
+            isLoading: false,
+            history: []
+        });
+    },
 }));
