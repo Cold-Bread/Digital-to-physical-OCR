@@ -1,10 +1,10 @@
 // This will be the new OCR outputs and LLM output table component
 const OCROutputs = ({
-	mainTableData,
-	sideTableData,
+	mainTableData = [],
+	sideTableData = [],
 }: {
-	mainTableData: any[];
-	sideTableData: any[];
+	mainTableData?: any[];
+	sideTableData?: any[];
 }) => {
 	// Helper to check if a row in mainTableData has a match in sideTableData
 	const hasMatch = (row: any) => {

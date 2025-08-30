@@ -1,8 +1,12 @@
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from main_app.routes.ocr_routes import router as ocr_router
-#from main_app.routes.main_routes import router as user_router
+from main_app.routes.sheet_routes import router as sheet_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +19,18 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down application...")
 
 app = FastAPI(lifespan=lifespan)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(ocr_router)
+app.include_router(sheet_router)
 
 # Basic root endpoint/ health check
 @app.get("/")

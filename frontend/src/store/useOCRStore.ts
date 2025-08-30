@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import { BackendResponse } from "../types/backendResponse";
 
+type TextType = 'printed' | 'handwritten';
+
 interface OCRStore {
+	// Text type toggle
+	textType: TextType;
+	setTextType: (type: TextType) => void;
+
 	// OCR and LLM response
 	ocrResponse: BackendResponse | null;
 	setOCRResponse: (resp: BackendResponse) => void;
@@ -33,6 +39,9 @@ interface OCRStore {
 }
 
 export const useOCRStore = create<OCRStore>((set) => ({
+	textType: 'printed',
+	setTextType: (type) => set({ textType: type }),
+
 	ocrResponse: null,
 	setOCRResponse: (resp) => set({ ocrResponse: resp }),
 
