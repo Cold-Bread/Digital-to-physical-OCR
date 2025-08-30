@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node.js
 node_modules
 dist
 dist-ssr
@@ -23,6 +24,38 @@ dist-ssr
 *.sln
 *.sw?
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Credentials
+**/config/credentials.json
+
 # Environments
 # Ignore any 'venv*' folder inside backend2
 /backend2/**/venv*/
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
