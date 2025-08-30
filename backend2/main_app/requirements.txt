@@ -1,9 +1,9 @@
-# FastAPI backend
-fastapi
-uvicorn[standard]
-requests
-python-multipart
-pandas
-openpyxl  # For Excel file handling
-pydantic
-python-Levenshtein  # For fuzzy string matching
+# Main FastAPI backend requirements
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+requests==2.32.3
+python-multipart==0.0.9
+pandas==2.2.2
+openpyxl==3.1.2  # For Excel file handling
+pydantic==2.7.1
+python-Levenshtein==0.25.1  # For fuzzy string matching

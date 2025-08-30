@@ -11,7 +11,7 @@ MAIN_VENV := $(MAIN_DIR)/venvMain
 PADDLE_VENV := $(PADDLE_DIR)/venvPaddle310
 TROCR_VENV := $(TROCR_DIR)/venvTrOCR310
 
-all: main paddle trocr
+all: main # paddle trocr
 
 main:
 	@echo "Creating venv for main_app..."
