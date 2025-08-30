@@ -25,7 +25,7 @@ async def process_ocr(url: str, image_data: bytes, filename: str):
         print(f"Error processing OCR at {url}: {e}")
         return []
 
-@router.post("/box/{box_number}")
+@router.get("/box/{box_number}")
 async def get_box_patients(box_number: str):
     """Get patients from Excel sheet based on box number"""
     patients = get_patients_by_box(box_number)
@@ -33,7 +33,7 @@ async def get_box_patients(box_number: str):
         raise HTTPException(status_code=404, detail="No patients found for this box number")
     return patients
 
-@router.post("/process-image")
+@router.get("/process-image")
 async def process_image(file: UploadFile = File(...)):
     """Process image through all OCR engines and return combined results"""
     contents = await file.read()
@@ -56,14 +56,6 @@ async def process_image(file: UploadFile = File(...)):
         ocr3=ocr_results[2],
         finalResult=final_result
     )
-
-@router.post("/update-records")
-async def update_records(patients: List[Patient]):
-    """Update Excel records with confirmed patient information"""
-    success = update_excel_records(patients)
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to update records")
-    return {"message": "Records updated successfully"}
 
 def process_ocr_results(results):
     """

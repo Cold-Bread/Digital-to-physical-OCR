@@ -31,11 +31,11 @@ Shred Year: Int
 IsChildWhenJoined: Int
 
 
-** I need to pull data from the excel sheet based on which box were using
+** backend need to pull data from the excel sheet based on which box were using
 database.py - only if we are adding things to the excel sheet, (a internal database)
 
 
-jordan runs 1 wrapper function that returns a tuple of the results of each ocr's true results (run through fuzzy search as well)
+frontend runs 1 wrapper function that returns a tuple of the results of each ocr's true results (run through fuzzy search as well)
 
 ** Need to add macro in excel to auto check the boxes
 
@@ -69,9 +69,3 @@ def finalOCRResult{
     Package list of names, with DOB's and send to jordan
 }
 
-
-Chatgpt prompt
-
-Can you edit the backend2 folder to follow the list of api calls specified in plan.txt
-
-Edit backendResponse.txt to have the new interface objects
