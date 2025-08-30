@@ -1,121 +1,161 @@
-# 📁 Full Stack App Setup Guide
+# Digital-to-Physical OCR System
 
-This project consists of a **FastAPI** backend and a **React + Vite** frontend. Follow the steps below to set everything up locally.
+This project is a comprehensive OCR (Optical Character Recognition) system that uses multiple OCR engines to process images and extract text. It consists of three backend services and a React frontend interface.
 
----
+## 🌟 Features
 
-## 📦 Backend Setup (FastAPI + Python)
+- Multiple OCR engines for improved accuracy:
+  - PaddleOCR for general text recognition
+  - Microsoft's TrOCR for handwritten text
+- React + TypeScript frontend for image upload and results display
+- FastAPI backend for orchestrating OCR services
+- Google Sheets integration for data storage
+- Box number tracking system
 
-1. Navigate to the backend folder:
-   ```bash
-   cd backend
-   ```
+## 🛠️ Prerequisites
 
-2. Create a virtual environment to isolate dependencies:
-   ```bash
-   python -m venv venv
-   ```
+- Python 3.10+ (3.13 recommended)
+- Node.js and npm
+- Git
+- Make (for using the Makefile)
 
-3. Activate the virtual environment:
-   - On **Windows**:
-     ```bash
-     venv\Scripts\activate
-     ```
-   - On **Mac/Linux**:
-     ```bash
-     source venv/bin/activate
-     ```
+## 🚀 Installation
 
-4. Install required Python packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 1. Clone the Repository
 
-5. Run the FastAPI server with hot-reloading:
-   ```bash
-   uvicorn main:app --reload
-   ```
+```bash
+git clone https://github.com/Cold-Bread/Digital-to-physical-OCR.git
+cd Digital-to-physical-OCR
+```
 
-- API will be live at: [http://localhost:8000](http://localhost:8000)
-- Interactive docs available at: [http://localhost:8000/docs](http://localhost:8000/docs)
+### 2. Backend Setup
 
-### 🧪 Python Virtual Environment Notes
+The project uses three separate Python services, each with its own virtual environment. You can set them up using the provided Makefile:
 
-A virtual environment (`venv`) is used to keep this project's Python dependencies isolated from the global environment. This prevents version conflicts and ensures reproducibility. Always activate the venv before installing packages or running the backend.
+```bash
+make all
+```
 
----
+This will create and configure all three virtual environments:
+- Main application (FastAPI orchestrator)
+- PaddleOCR service
+- TrOCR service
 
-## 💻 Frontend Setup (React + Vite + TypeScript)
+Alternatively, you can set up services individually:
+```bash
+make main      # Setup main FastAPI service
+make paddle    # Setup PaddleOCR service
+make trocr     # Setup TrOCR service
+```
 
-1. Ensure Node.js is installed:  
-   👉 [Download Node.js](https://nodejs.org/en/download)
+### 3. Frontend Setup
 
-2. Navigate to the frontend folder:
-   ```bash
-   cd frontend
-   ```
+```bash
+cd frontend
+npm install
+```
 
-3. Install frontend dependencies:
-   ```bash
-   npm install
-   ```
+## 🏃‍♂️ Running the Application
 
-4. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
+### 1. Start the Backend Services
 
-- Frontend will be live at: [http://localhost:5173](http://localhost:5173)
-- Vite supports hot reload; changes will reflect instantly.
-- To build for production:
-   ```bash
-   npm run build
-   ```
+You can start all backend services automatically using the provided batch script:
 
----
+```bash
+start_services.bat
+```
+
+Simply double-click the `start_services.bat` file in Windows Explorer, or run it from the command prompt.
+This will open three separate command prompt windows, each running one of the services:
+- Main Service (port 8000)
+- PaddleOCR Service (port 8001)
+- TrOCR Service (port 8002)
+
+Alternatively, you can start each service manually by opening three separate terminal windows and activating each virtual environment:
+
+Main Service:
+```bash
+cd backend2/main_app
+./venvMain/Scripts/activate  # On Windows
+uvicorn main:app --reload --port 8000
+```
+
+PaddleOCR Service:
+```bash
+cd backend2/ocr_paddle_service
+./venvPaddle310/Scripts/activate  # On Windows
+uvicorn app:app --reload --port 8001
+```
+
+TrOCR Service:
+```bash
+cd backend2/ocr_trocr_service
+./venvTrOCR310/Scripts/activate  # On Windows
+uvicorn app:app --reload --port 8002
+```
+
+### 2. Start the Frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+The frontend will be available at http://localhost:5173
+
+## 📝 API Endpoints
+
+### Main Service (port 8000)
+
+- `GET /` - Health check
+- `GET /box/{box_number}` - Get patients from a specific box
+- `GET /process-image` - Process an image through all OCR engines
+- `POST /update-records` - Update patient records
+
+### PaddleOCR Service (port 8001)
+
+- `POST /ocr` - Process image with PaddleOCR
+
+### TrOCR Service (port 8002)
+
+- `POST /ocr` - Process image with TrOCR (optimized for handwriting)
 
 ## ✅ Quick Commands Summary
 
-| Task             | Command                                      |
-|------------------|----------------------------------------------|
-| Start Backend    | `uvicorn main:app --reload`          |
-| Start Frontend   | `cd frontend && npm run dev`                 |
-| Build Frontend   | `npm run build` (from `frontend` folder)     |
+| Task                  | Command                                           |
+|----------------------|--------------------------------------------------|
+| Setup All Services   | `make all`                                        |
+| Setup Main Service   | `make main`                                       |
+| Setup PaddleOCR      | `make paddle`                                     |
+| Setup TrOCR          | `make trocr`                                      |
+| Clean All            | `make clean`                                      |
+| Start Frontend       | `cd frontend && npm run dev`                      |
 
-go to https://www.python.org/downloads/windows/
-ctrl+f 3.10.11
-install 64-bit, add to path option, check version afterwards
+## 🧹 Cleanup
 
-if version doesnt work use to specify location directly
-"C:\Users\Jacob\AppData\Local\Programs\Python\Python310\python.exe" -m venv venvTrOCR310
-"C:\Users\Jacob\AppData\Local\Programs\Python\Python310\python.exe" -m venv venvPaddle310
-follow this path on your computer
+To remove all virtual environments and start fresh:
 
-enter new venv - idk how to add venv folder to .gitignore
-venv310\Scripts\activate
+```bash
+make clean
+```
 
-make sure to swap interprter on vscode as well, bottom right corner
+## 🔧 Configuration
 
-upgrade pip
-pip install --upgrade pip
+### Google Sheets Integration
 
-cd to backend
-cd backend
+1. Place your Google Sheets credentials in:
+   ```
+   backend2/main_app/config/credentials.json
+   ```
+2. Configure sheet settings in:
+   ```
+   backend2/main_app/config/sheets_config.py
+   ```
 
-run command to download updated requirements.txt with specifc versions of pytorch and paddle
-pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu118
+## 🤝 Contributing
 
-then run
-pip install paddlepaddle-gpu==2.5.0.post118 -f https://www.paddlepaddle.org.cn/whl/windows/mkl/avx/stable.html
-pip install paddleocr
-
-check if paddle installed correctly, should return 2.5.0
-python -c "import paddle; print(paddle.__version__)"
-
-cuda 11.8 download link
-https://developer.nvidia.com/cuda-11-8-0-download-archive?target_os=Windows&target_arch=x86_64&target_version=11&target_type=exe_local
-
-Jacobs Commands for venv 3.11 -- old:
-cd Downloads\OCR\Digital-to-physical-OCR\my-webapp\backend
-venv310\Scripts\activate
-uvicorn main:app --reload
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request

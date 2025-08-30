@@ -11,7 +11,7 @@ class Patient(BaseModel):
     year_joined: int
     last_dos: int
     shred_year: int
-    is_child_when_joined: int
+    is_child_when_joined: bool
     box_number: str
 
 class OCRResponse(BaseModel):
@@ -19,6 +19,3 @@ class OCRResponse(BaseModel):
     ocr2: List[OCRResult]
     ocr3: List[OCRResult]
     finalResult: OCRResult
-
-class BoxRequest(BaseModel):
-    box_number: str

@@ -53,6 +53,36 @@ body {
 	margin: 0 30px;
 }
 
+/* === Text Type Toggle === */
+.text-type-toggle {
+	display: flex;
+	gap: 16px;
+	align-items: center;
+	background: #232323;
+	padding: 8px 16px;
+	border-radius: 6px;
+	border: 1px solid #444;
+}
+
+.text-type-toggle label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	cursor: pointer;
+	user-select: none;
+	color: #fff;
+}
+
+.text-type-toggle input[type="radio"] {
+	cursor: pointer;
+	width: 16px;
+	height: 16px;
+}
+
+.text-type-toggle label:hover {
+	color: #4caf50;
+}
+
 .control-buttons {
 	display: flex;
 	gap: 10px;
