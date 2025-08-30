@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import logging
 from shared_utils.types import TextType
-from shared_utils.image_processing import enhance_image_cv2, classify_text, extract_text_regions
+from shared_utils.image_processing import enhance_image_cv2, classify_text
 
 # Configure logging to both file and console
 import os
@@ -85,25 +85,6 @@ async def run_paddleocr(
         cv2.imwrite(debug_path, enhanced)
         logger.info(f"Saved enhanced image to {debug_path}")
         
-        # Split image into vertical slices
-        regions = extract_text_regions(enhanced, method='vertical_slice')
-        logger.info(f"Split image into {len(regions)} vertical regions")
-        
-        # Save regions for debugging
-        for i, region in enumerate(regions):
-            cv2.imwrite(f"debug_region_{i}.png", region)
-        
-        # Get the appropriate OCR model
-        ocr = ocr_models[text_type]
-        
-        # Process each region
-        all_results = []
-        for i, region in enumerate(regions):
-            logger.info(f"Processing region {i}")
-            result = ocr.ocr(region)
-            if result:
-                all_results.extend(result)
-        
         # Save original image for comparison
         cv2.imwrite("debug_original.png", image)
         logger.info("Saved original image for comparison")
@@ -111,23 +92,27 @@ async def run_paddleocr(
         # Log image properties
         logger.info(f"Image properties - Shape: {enhanced.shape}, Type: {enhanced.dtype}, Min: {enhanced.min()}, Max: {enhanced.max()}")
         
+        # Get the appropriate OCR model
+        ocr = ocr_models[text_type]
+        
         # Attempt OCR
         logger.info("Starting OCR detection")
         result = ocr.ocr(enhanced)
+        all_results = [result[0]] if result and isinstance(result, list) and result[0] else []
+        
         logger.info(f"Raw OCR result: {result}")
         
-        # Process results
+        logger.info(f"Raw OCR result: {all_results}")
+        
+        # Process results from all regions
         text_results = []
         
-        if result and isinstance(result, list):
-            # Get the first result (usually there's only one page)
-            page_result = result[0]
-            
+        for page_result in all_results:
             if isinstance(page_result, dict) and 'rec_texts' in page_result and 'rec_scores' in page_result:
                 texts = page_result['rec_texts']
                 scores = page_result['rec_scores']
                 
-                logger.info(f"Found {len(texts)} text segments")
+                logger.info(f"Found {len(texts)} text segments in region")
                 
                 # First pass: classify all texts
                 classified_results = []
@@ -152,25 +137,27 @@ async def run_paddleocr(
                         continue
                 
                 # Second pass: combine stacked name/DOB pairs
-                text_results = []
                 i = 0
+                combined_results = []
                 while i < len(classified_results):
                     current = classified_results[i]
+                    next_result = classified_results[i + 1] if i + 1 < len(classified_results) else None
                     
-                    # Look ahead for potential DOB to combine with name
-                    if (i + 1 < len(classified_results) and
-                        current['name'] and not current['dob'] and  # Current has name but no DOB
-                        not classified_results[i + 1]['name'] and classified_results[i + 1]['dob']):  # Next has DOB but no name
+                    # Check if current has name but no DOB and next has only DOB
+                    if (next_result and
+                        current.get('name') and not current.get('dob') and  # Current has name but no DOB
+                        not next_result.get('name') and next_result.get('dob')):  # Next has DOB but no name
                         
                         # Combine them
-                        current['dob'] = classified_results[i + 1]['dob']
-                        text_results.append(current)
-                        i += 2  # Skip the DOB we just used
+                        current['dob'] = next_result['dob']
+                        combined_results.append(current)
+                        i += 2  # Skip the DOB entry we just used
                         logger.info(f"Combined stacked entries: {current}")
-                        
                     else:
-                        text_results.append(current)
+                        combined_results.append(current)
                         i += 1
+                
+                text_results.extend(combined_results)
         
         logger.info(f"Final results: {text_results}")
         return text_results
