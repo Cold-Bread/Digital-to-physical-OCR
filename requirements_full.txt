@@ -13,10 +13,3 @@ python-Levenshtein
 # ocr_paddle_service/requirements.txt
 FastAPI
 uvicorn[standard]
-
-
-# ocr_trocr_service/requirements.txt
-torch
-transformers
-FastAPI
-uvicorn[standard]

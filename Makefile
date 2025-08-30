@@ -23,11 +23,6 @@ paddle:
 	$(PYTHON) -m venv "$(PADDLE_VENV)"
 	cmd /C ""$(PADDLE_VENV)\Scripts\activate.bat" && pip install paddlepaddle-gpu==3.1.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/ && pip install -r "$(PADDLE_DIR)\requirements.txt""
 
-trocr:
-	@echo "Creating venv for TrOCR service..."
-	$(PYTHON) -m venv "$(TROCR_VENV)"
-	cmd /C ""$(TROCR_VENV)\Scripts\activate.bat" && pip install -r "$(TROCR_DIR)\requirements.txt""
-
 clean:
 	@echo "Removing all virtual environments..."
 	cmd /C "if exist "$(MAIN_VENV)" rmdir /s /q "$(MAIN_VENV)""

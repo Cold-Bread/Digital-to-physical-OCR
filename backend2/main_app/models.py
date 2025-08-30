@@ -16,6 +16,3 @@ class Patient(BaseModel):
 
 class OCRResponse(BaseModel):
     ocr1: List[OCRResult]
-    ocr2: List[OCRResult]
-    ocr3: List[OCRResult]
-    finalResult: OCRResult

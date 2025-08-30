@@ -13,7 +13,4 @@ export interface Patient extends OCRResult {
 
 export interface BackendResponse {
 	ocr1: OCRResult[];
-	ocr2: OCRResult[];
-	ocr3: OCRResult[];
-	finalResult: OCRResult;
 }

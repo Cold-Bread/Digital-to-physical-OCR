@@ -6,9 +6,7 @@ function App() {
 	// Use global state for table data
 	const patientList = useOCRStore((s) => s.patientList);
 	const ocrResponse = useOCRStore((s) => s.ocrResponse);
-	const sideTableData = ocrResponse?.finalResult
-		? [ocrResponse.finalResult]
-		: [];
+	const sideTableData = ocrResponse?.ocr1 || [];
 
 	return (
 		<div className="main-container">
