@@ -45,10 +45,12 @@ app = FastAPI()
 ocr_models = {
     TextType.HANDWRITTEN: PaddleOCR(
         lang='en',
-        det_db_box_thresh=0.55,  # Slightly lower to catch handwritten text
-        det_db_unclip_ratio=2.0,  # Larger to connect handwritten strokes
-        det_limit_side_len=1280,  # Larger size for better detail
-        det_limit_type='max'
+        det_db_box_thresh=0.3,  # Lower threshold for handwriting detection
+        det_db_unclip_ratio=2.0,  # Better stroke connection
+        det_limit_side_len=2048,  # High resolution for detail
+        det_limit_type='max',
+        use_angle_cls=True,  # Enable rotation detection
+        rec_batch_num=6  # Smaller batch size for better recognition
     ),
     TextType.PRINTED: PaddleOCR(
         lang='en',
@@ -118,6 +120,10 @@ async def run_paddleocr(
                 classified_results = []
                 for text, score in zip(texts, scores):
                     try:
+                        # Skip very low confidence results
+                        if score < 0.3:  # Lower minimum confidence threshold
+                            continue
+                            
                         if not text or not isinstance(text, str):
                             continue
                             

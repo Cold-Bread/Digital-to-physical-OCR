@@ -302,10 +302,60 @@ body {
     vertical-align: middle;
 }
 
+.empty-row td {
+    background: rgba(255, 255, 255, 0.05);
+    height: 42px;  /* Match the height of data rows */
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
 .edit-controls {
     display: flex;
     justify-content: flex-end;
     padding: 16px 0 0 0;
+}
+
+/* Duplicate entries styling */
+.duplicate-group {
+    background: rgba(255, 152, 0, 0.1) !important;
+}
+
+.duplicate-header {
+    font-weight: bold;
+    color: #ff9800;
+    margin-bottom: 8px;
+}
+
+.duplicate-entry {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    margin: 4px 0;
+    border-radius: 4px;
+}
+
+.keep-button {
+    background: #ff9800;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: auto;
+}
+
+.keep-button:hover {
+    background: #f57c00;
+}
+
+.source-tag {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    margin-left: 8px;
+    white-space: nowrap;
 }
 
 /* Checkbox styling */

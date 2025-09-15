@@ -233,38 +233,3 @@ make all
 # Update dependencies
 pip install -r requirements_full.txt
 ```
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Make your changes
-4. Run tests if available
-5. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-6. Push to the branch (`git push origin feature/AmazingFeature`)
-7. Open a Pull Request
-
-## 🧹 Maintenance
-
-To keep the system running smoothly:
-
-1. Regular cleanup:
-   ```bash
-   make clean  # Remove all virtual environments
-   ```
-
-2. Update dependencies:
-   ```bash
-   pip list --outdated  # Check for updates
-   ```
-
-3. Monitor logs:
-   ```bash
-   # Main service logs
-   backend2/main_app/logs/
-   
-   # PaddleOCR logs
-   backend2/ocr_paddle_service/logs/
-   ```

@@ -1,9 +1,18 @@
 export interface OCRResult {
+    id: string;     // Unique identifier for each OCR result
     name: string;
-    dob: string;
+    dob: string | null;
+    score?: number;  // Confidence score from OCR is optional
+    isPotentialDuplicate?: boolean;
+    duplicateGroupId?: string;
+    isResolved?: boolean;    // Whether this duplicate has been resolved
+    imageSource?: string;    // Which image this result came from
+    matchedPatientIndex?: number; // Index of the patient this result was matched to
 }
 
-export interface Patient extends OCRResult {
+export interface Patient {
+    name: string;
+    dob: string;
     year_joined: number;
     last_dos: number;
     shred_year: number;
@@ -12,7 +21,7 @@ export interface Patient extends OCRResult {
 }
 
 export interface BackendResponse {
-    ocr1: OCRResult[];
+    ocr1: OCRResult[]; // change this var name to paddleOCR
 }
 
 // Separate type for box response since it's a different endpoint

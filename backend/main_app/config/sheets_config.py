@@ -14,7 +14,7 @@ class MemoryCache(Cache):
         MemoryCache._CACHE[url] = content
 
 # Update these constants with your values
-SPREADSHEET_ID = '1_gLQUeWhE6QamZY0CV-n7P06dzq7zRTzTYDPfXvjqC0'  # Get this from your Google Sheets URL
+SPREADSHEET_ID = ''  # Get this from your Google Sheets URL
 CREDENTIALS_FILE = os.path.join(os.path.dirname(__file__), 'credentials.json')
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 

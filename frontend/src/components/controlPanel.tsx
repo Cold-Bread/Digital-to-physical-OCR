@@ -73,7 +73,7 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
             } else {
                 // If no box number, just clear the state
                 setPatientList([]);
-                setOCRResponse(null);
+                setOCRResponse(null, '');
                 alert("Records saved successfully!");
             }
         } catch (err) {
@@ -85,13 +85,11 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
         }
     };
 
-    const handleSend = async () => {
-        if (!boxNumber || !selectedFile) return;
-        console.log('Starting request with:', { boxNumber, fileName: selectedFile.name });
+    const handleGetBox = async () => {
+        if (!boxNumber) return;
         setIsLoading(true);
         
         try {
-            // 1. Get patients by box number
             console.log('Fetching box data...');
             const boxRes = await fetch(API_ENDPOINTS.BOX(boxNumber), {
                 method: "POST",
@@ -108,8 +106,23 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
             const patients: BoxResponse = await boxRes.json();
             console.log('Received box data:', patients);
             setPatientList(patients);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
+            alert(`Error: ${errorMessage}`);
+            console.error(err);
+            setPatientList([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-            // 2. Send image to /process-image
+    const handleSend = async () => {
+        if (!selectedFile) return;
+        console.log('Processing image:', selectedFile.name);
+        setIsLoading(true);
+        
+        try {
+            // Send image to /process-image
             console.log('Processing image...');
             const formData = new FormData();
             formData.append("file", selectedFile);
@@ -125,15 +138,13 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 
             const ocrData: BackendResponse = await ocrRes.json();
             console.log('Received OCR data:', ocrData);
-            setOCRResponse(ocrData);
+            setOCRResponse(ocrData, selectedFile.name);
             
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
             alert(`Error: ${errorMessage}`);
             console.error(err);
-            // Reset the store on error
-            setPatientList([]);
-            setOCRResponse(null);
+            setOCRResponse(null, '');
         } finally {
             setIsLoading(false);
         }
@@ -178,10 +189,17 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
             </button>
             <button
                 className="button"
-                onClick={handleSend}
-                disabled={!boxNumber || !selectedFile || isLoading}
+                onClick={handleGetBox}
+                disabled={!boxNumber || isLoading}
             >
-                {isLoading ? "Processing..." : "Send"}
+                {isLoading ? "Loading..." : "Get Box"}
+            </button>
+            <button
+                className="button"
+                onClick={handleSend}
+                disabled={!selectedFile || isLoading}
+            >
+                {isLoading ? "Processing..." : "Send Image"}
             </button>
             <div className="divider"></div>
             <button
