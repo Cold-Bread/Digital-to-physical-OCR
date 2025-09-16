@@ -4,8 +4,8 @@ echo Starting OCR services...
 
 :: Set paths relative to script location
 set "SCRIPT_DIR=%~dp0"
-set "MAIN_PATH=%SCRIPT_DIR%backend2\main_app"
-set "PADDLE_PATH=%SCRIPT_DIR%backend2\ocr_paddle_service"
+set "MAIN_PATH=%SCRIPT_DIR%backend\main_app"
+set "PADDLE_PATH=%SCRIPT_DIR%backend\ocr_paddle_service"
 
 :: Start Main Service
 echo Starting Main Service on port 8000...
