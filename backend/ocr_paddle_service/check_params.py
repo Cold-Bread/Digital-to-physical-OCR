@@ -1,17 +1,19 @@
-from paddleocr import PaddleOCR
-import pprint
 
-# Create an instance
+from backend.shared_utils.logging_config import get_logger
+from paddleocr import PaddleOCR
+
+
+logger = get_logger(__name__)
 ocr = PaddleOCR()
 
-# Print all attributes
-print("PaddleOCR Attributes:")
-print("--------------------")
+# Log all attributes
+logger.info("PaddleOCR Attributes:")
+logger.info("--------------------")
 for attr in dir(ocr):
     if not attr.startswith('_'):  # Skip private attributes
         try:
             value = getattr(ocr, attr)
             if not callable(value):  # Skip methods, only show parameters
-                print(f"{attr}: {value}")
-        except:
+                logger.info(f"{attr}: {value}")
+        except Exception:
             pass
