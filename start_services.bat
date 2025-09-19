@@ -1,9 +1,9 @@
-@echo off:: Start Main Service
-echo Starting Main Service on port 8000...
-echo Starting OCR services...
+@echo off
 
 :: Set paths relative to script location
 set "SCRIPT_DIR=%~dp0"
+REM Ensure SCRIPT_DIR ends with a backslash
+if not "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR%\"
 set "MAIN_PATH=%SCRIPT_DIR%backend\main_app"
 set "PADDLE_PATH=%SCRIPT_DIR%backend\ocr_paddle_service"
 
@@ -16,8 +16,7 @@ timeout /t 2 /nobreak > nul
 
 :: Start PaddleOCR Service
 echo Starting PaddleOCR Service on port 8001...
-start "PaddleOCR Service" cmd /k "cd %PADDLE_PATH% && call venvPaddle310\Scripts\activate.bat && uvicorn app:app --reload --port 8001"
-
+start "PaddleOCR Service" cmd /k "cd %PADDLE_PATH% && call venvPaddle310\Scripts\activate.bat && set PYTHONPATH=%SCRIPT_DIR%backend;%SCRIPT_DIR%shared_utils && echo PYTHONPATH=%PYTHONPATH% && uvicorn app:app --reload --port 8001"
 echo.
 echo All services have been started!
 echo Main Service: http://localhost:8000
