@@ -18,12 +18,12 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("Shutting down application...")
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan = lifespan)
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Your frontend URL
+    allow_origins=["http://localhost:5173"],  # Frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

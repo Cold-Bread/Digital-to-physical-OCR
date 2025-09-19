@@ -59,3 +59,4 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+venvPaddle310

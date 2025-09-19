@@ -11,7 +11,6 @@ router = APIRouter()
 PADDLE_OCR_URL = "http://localhost:8001/ocr"
 
 async def process_ocr(url: str, image_data: bytes, filename: str, text_type: TextType) -> list[str]:
-    """Helper function to process OCR request"""
     try:
         response = requests.post(
             url,
@@ -34,7 +33,6 @@ async def process_image(
     try:
         contents = await file.read()
         
-        # Process image through PaddleOCR
         paddle_ocr_result = await process_ocr(PADDLE_OCR_URL, contents, file.filename, text_type)
         
         if not paddle_ocr_result:
