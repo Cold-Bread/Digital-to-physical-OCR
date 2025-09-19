@@ -4,24 +4,23 @@ import OCROutputs from "./components/OCROutputs";
 import { useOCRStore } from "./store/useOCRStore";
 
 function App() {
-	// Use global state for table data
 	const patientList = useOCRStore((s) => s.patientList);
 	const ocrResponse = useOCRStore((s) => s.ocrResponse);
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
 	// Transform OCR response to match display format
 	const ocrData = useMemo(() => {
-		if (!ocrResponse?.ocr1) return [];
+		if (!ocrResponse) return [];
 
-		console.log("Raw OCR Response:", ocrResponse.ocr1);
+		console.log("Raw OCR Response:", ocrResponse.paddleOCR);
 
 		// Filter and transform OCR results
-		const filteredResults = ocrResponse.ocr1
+		const filteredResults = ocrResponse.paddleOCR
 			.filter((result) => {
 				// Keep entries with a valid name (excluding special cases)
 				return (
-					result.name &&
-					result.name.trim() !== "" &&
-					result.name !== "tc851291199"
+					result.name && result.name.trim() !== ""
+					//result.name !== "tc851291199" possibly a default value, uncomment if so
 				);
 			})
 			.map((result) => ({
@@ -40,8 +39,6 @@ function App() {
 		hasOcrResponse: !!ocrResponse,
 		ocrData,
 	});
-
-	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
 	return (
 		<div className="main-container">
