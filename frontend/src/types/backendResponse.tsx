@@ -21,7 +21,7 @@ export interface Patient {
 }
 
 export interface BackendResponse {
-	ocr1: OCRResult[]; // change this var name to paddleOCR
+	paddleOCR: OCRResult[];
 }
 
 // Separate type for box response since it's a different endpoint
