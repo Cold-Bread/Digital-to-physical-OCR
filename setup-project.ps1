@@ -66,8 +66,12 @@ if ($Clean) {
     Write-Host "Cleaning up virtual environments..."
     Remove-Dir $mainVenv
     Remove-Dir $paddleVenv
-    Write-Host "Cleaning up node_modules..."
+    Write-Host "Cleaning up node_modules and package-lock.json..."
     Remove-Dir $nodeModules
+    $packageLock = "$frontendDir/package-lock.json"
+    if (Test-Path $packageLock) {
+        Remove-Item -Force $packageLock
+    }
     Write-Host "Clean complete."
     exit 0
 }
