@@ -83,13 +83,13 @@ async def run_paddleocr(
         enhanced = enhance_image_cv2(image)
         
         # Save enhanced image for debugging
-        debug_path = "debug_enhanced.png"
+        debug_path = os.path.join(log_dir, "debug_enhanced.png")
         cv2.imwrite(debug_path, enhanced)
         logger.info(f"Saved enhanced image to {debug_path}")
         
         # Save original image for comparison
-        cv2.imwrite("debug_original.png", image)
-        logger.info("Saved original image for comparison")
+        # cv2.imwrite("debug_original.png", image)
+        # logger.info("Saved original image for comparison")
         
         # Log image properties
         logger.info(f"Image properties - Shape: {enhanced.shape}, Type: {enhanced.dtype}, Min: {enhanced.min()}, Max: {enhanced.max()}")

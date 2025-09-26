@@ -17,9 +17,19 @@ timeout /t 2 /nobreak > nul
 :: Start PaddleOCR Service
 echo Starting PaddleOCR Service on port 8001...
 start "PaddleOCR Service" cmd /k "cd %PADDLE_PATH% && call venvPaddle310\Scripts\activate.bat && set PYTHONPATH=%SCRIPT_DIR%backend;%SCRIPT_DIR%shared_utils && echo PYTHONPATH=%PYTHONPATH% && uvicorn app:app --reload --port 8001"
+
+:: Wait a moment before starting frontend
+timeout /t 2 /nobreak > nul
+
+:: Start Frontend (Vite dev server)
+set "FRONTEND_PATH=%SCRIPT_DIR%frontend"
+echo Starting Frontend (Vite dev server) on port 5173...
+start "Frontend" cmd /k "cd /d %FRONTEND_PATH% && call npm run dev"
+
 echo.
 echo All services have been started!
 echo Main Service: http://localhost:8000
 echo PaddleOCR Service: http://localhost:8001
+echo Frontend: http://localhost:5173
 echo.
 pause
