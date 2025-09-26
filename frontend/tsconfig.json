@@ -15,6 +15,9 @@
 		"noEmit": true,
 		"jsx": "react-jsx",
 
+		// Exclude node types to fix "Cannot find type definition file for 'node'"
+		"types": [],
+
 		/* Linting */
 		"strict": true,
 		"noUnusedLocals": true,
