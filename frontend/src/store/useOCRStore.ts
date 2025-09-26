@@ -2,7 +2,6 @@ import { create } from "zustand";
 import {
 	BackendResponse,
 	BoxResponse,
-	Patient,
 	OCRResult,
 	OCRGroup,
 } from "../types/backendResponse";
@@ -61,23 +60,54 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 
 	// Set OCR response and process for duplicates
 	setOCRResponse: (resp, imageSource) => {
-		console.log("Setting OCR Response:", resp);
 		set({ ocrResponse: resp });
-		if (resp) {
-			get().addOCRResults(resp.paddleOCR, imageSource);
+
+		if (!resp) {
+			console.warn("No OCR response provided");
+			return;
+		}
+
+		let ocrArray = null;
+
+		// Primary check for expected paddleOCR format
+		if (resp.paddleOCR && Array.isArray(resp.paddleOCR)) {
+			ocrArray = resp.paddleOCR;
+		} else {
+			// Fallback: check if response is directly an array
+			const respAny = resp as any;
+			if (Array.isArray(resp)) {
+				ocrArray = resp;
+			} else if (respAny.ocr && Array.isArray(respAny.ocr)) {
+				ocrArray = respAny.ocr;
+			} else if (respAny.results && Array.isArray(respAny.results)) {
+				ocrArray = respAny.results;
+			}
+		}
+
+		if (ocrArray) {
+			get().addOCRResults(ocrArray, imageSource);
+		} else {
+			console.warn("Invalid OCR response format - no OCR data array found");
 		}
 	},
 
 	// Add new OCR results and check for duplicates
 	addOCRResults: (results, imageSource) => {
+		if (!Array.isArray(results)) {
+			console.warn("Results is not an array:", results);
+			return;
+		}
+
 		const currentResults = [...get().allOCRResults];
-		const newResults = results.map((result) => ({
-			...result,
-			id: Math.random().toString(36).substr(2, 9), // Generate unique ID
-			imageSource,
-			isPotentialDuplicate: false,
-			isResolved: false,
-		}));
+		const newResults = results
+			.filter((result) => result && typeof result === "object" && result.name) // Filter out invalid results
+			.map((result) => ({
+				...result,
+				id: Math.random().toString(36).substr(2, 9), // Generate unique ID
+				imageSource,
+				isPotentialDuplicate: false,
+				isResolved: false,
+			}));
 
 		// Check for duplicates
 		const duplicateGroups: OCRGroup[] = [];
@@ -210,7 +240,6 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 	// Patient list management
 	patientList: [],
 	setPatientList: (list) => {
-		console.log("Setting Patient List:", list);
 		set({ patientList: list });
 		get().addToHistory(list);
 	},
@@ -218,7 +247,6 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 	// History management
 	history: [],
 	addToHistory: (list) => {
-		console.log("Adding to history");
 		const currentHistory = get().history;
 		set({
 			history: [
@@ -231,7 +259,6 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 		});
 	},
 	undo: () => {
-		console.log("Undoing last change");
 		const currentHistory = get().history;
 		if (currentHistory.length > 1) {
 			const newHistory = [...currentHistory];
@@ -244,7 +271,6 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 		}
 	},
 	undoAll: () => {
-		console.log("Undoing all changes");
 		const currentHistory = get().history;
 		if (currentHistory.length > 1) {
 			const initialState = currentHistory[0];
@@ -258,7 +284,6 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 	// Loading and validation
 	isLoading: false,
 	setIsLoading: (loading) => {
-		console.log("Setting Loading State:", loading);
 		set({ isLoading: loading });
 	},
 
@@ -268,7 +293,6 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 
 	// Reset everything
 	resetAll: () => {
-		console.log("Resetting Store");
 		set({
 			ocrResponse: null,
 			allOCRResults: [],

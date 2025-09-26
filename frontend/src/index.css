@@ -1,366 +1,226 @@
-/* === Base Styles === */
+/* ===================================================================
+   DIGITAL-TO-PHYSICAL-OCR FRONTEND STYLES
+   This file contains all the styling for the main application layout,
+   components, and UI elements.
+   =================================================================== */
+
+/* === ROOT VARIABLES & BASE STYLES === */
 :root {
-    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.95);
-    background-color: #1e1e1e;
+	/* Base font and color settings for the entire application */
+	font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	line-height: 1.5;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.95);
+	background-color: #1e1e1e;
 }
 
 body {
-    margin: 0;
-    min-width: 320px;
-    min-height: 100vh;
-    background: #1e1e1e;
+	/* Base body styling with dark theme */
+	margin: 0;
+	min-width: 320px;
+	min-height: 100vh;
+	background: #1e1e1e;
 }
 
-/* === Main Layout === */
+/* === MAIN APPLICATION LAYOUT === */
 .main-container {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: #1e1e1e;
-    min-width: min-content;
+	/* Root container for the entire app - uses flexbox for layout */
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	background: #1e1e1e;
+	min-width: min-content;
 }
 
 .outputs-area {
-    flex: 1;
-    display: flex;
-    justify-content: flex-start;
-    padding: 20px 20px 100px 20px;
-    overflow-x: auto;
-    width: 100%;
+	/* Main content area that contains the tables and image preview */
+	flex: 1;
+	display: flex;
+	justify-content: flex-start;
+	padding: 20px 20px 100px 20px; /* Extra bottom padding for fixed control panel */
+	overflow-x: auto;
+	width: 100%;
 }
 
-/* === Table Styles === */
+/* === DATA DISPLAY CONTAINERS === */
 .outputs-container {
-    display: flex;
-    gap: 20px;
-    min-width: min-content;
-    width: fit-content;
-    align-items: flex-start;
+	/* Container for all data display elements (tables + image preview) */
+	display: flex;
+	gap: 20px;
+	min-width: min-content;
+	width: fit-content;
+	align-items: flex-start;
 }
 
 .main-table-container,
 .side-table-container {
-    background: #232323;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 2px 8px #0006;
-    overflow: visible;
-    width: fit-content;
-    margin-top: 0;
+	/* Styling for both table containers - Box Records and OCR Results */
+	background: #232323;
+	border-radius: 10px;
+	padding: 20px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+	overflow: visible;
+	width: fit-content;
+	margin-top: 0;
 }
 
 .main-table-container {
-    min-width: 1000px;
+	/* Specific sizing for the Box Records table container */
+	min-width: 1000px;
 }
 
 .side-table-container {
-    min-width: 600px;
+	/* Specific sizing for the OCR Results table container */
+	min-width: 600px;
 }
 
-.main-table,
-.side-table {
-    border-collapse: collapse;
-    width: auto;
-    white-space: nowrap;
+.main-table-container h3,
+.side-table-container h3 {
+	/* Table headers styling */
+	margin-top: 0;
+	margin-bottom: 15px;
+	color: #fff;
+	font-weight: 600;
 }
 
-.main-table th,
-.main-table td,
-.side-table th,
-.side-table td {
-    border: 1px solid #444;
-    padding: 8px 12px;
-    text-align: left;
-    overflow: visible;
-    white-space: normal;
-    word-wrap: break-word;
-}
-
-.main-table th,
-.side-table th {
-    background: #333;
-    color: #fff;
-    padding: 12px;
-    border-bottom: 12px solid #232323; /* Increased spacing after headers */
-    height: 24px; /* Consistent header height */
-}
-
-.main-table,
-.side-table {
-    width: 100%;
-    table-layout: fixed; /* This ensures the table respects its container width */
-}
-
-.main-table th,
-.side-table th {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* Column widths for box records table */
-.main-table th:nth-child(1) { width: auto; min-width: 200px; } /* Name */
-.main-table th:nth-child(2) { width: auto; min-width: 100px; } /* DOB */
-.main-table th:nth-child(3) { width: auto; min-width: 80px; } /* Year Joined */
-.main-table th:nth-child(4) { width: auto; min-width: 80px; } /* Last DOS */
-.main-table th:nth-child(5) { width: auto; min-width: 80px; } /* Shred Year */
-.main-table th:nth-child(6) { width: auto; min-width: 100px; } /* Child? */
-.main-table th:nth-child(7) { width: auto; min-width: 120px; } /* Box Number */
-
-/* Column widths for OCR results table */
-.side-table th:nth-child(1) { width: auto; min-width: 200px; } /* Name */
-.side-table th:nth-child(2) { width: auto; min-width: 100px; } /* DOB */
-.side-table th:nth-child(3) { width: auto; min-width: 100px; } /* Match Status */
-
-/* === Row States === */
+/* === ROW STATE CLASSES === */
+/* These classes are applied to DataGrid rows based on fuzzy matching results */
 .row-no-match {
-    background: rgba(255, 76, 76, 0.3) !important;
-    color: #ffffff !important;
-}
-
-.row-no-match td {
-    border-color: rgba(255, 76, 76, 0.5) !important;
+	/* Red background for rows with no matching OCR data */
+	background: rgba(255, 76, 76, 0.3) !important;
+	color: #ffffff !important;
 }
 
 .row-match {
-    background: rgba(76, 175, 80, 0.1) !important;
+	/* Green background for rows with strong OCR matches */
+	background: rgba(76, 175, 80, 0.1) !important;
 }
 
 .row-partial-match {
-    background: rgba(33, 150, 243, 0.1) !important;
+	/* Blue background for rows with partial OCR matches */
+	background: rgba(33, 150, 243, 0.1) !important;
 }
 
-/* === Image Preview === */
+/* === IMAGE PREVIEW === */
 .image-preview-container {
-    background: #232323;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 2px 8px #0006;
-    width: 25%;
-    min-width: 300px;
-    height: fit-content;
+	/* Container for the uploaded image preview */
+	background: #232323;
+	border-radius: 10px;
+	padding: 20px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+	width: 25%;
+	min-width: 300px;
+	height: fit-content;
 }
 
 .image-preview {
-    width: 100%;
-    height: auto;
-    border-radius: 4px;
-    margin-top: 10px;
-    object-fit: contain;
-    max-height: calc(100vh - 200px);
+	/* The actual image element styling */
+	width: 100%;
+	height: auto;
+	border-radius: 4px;
+	margin-top: 10px;
+	object-fit: contain;
+	max-height: calc(100vh - 200px);
 }
 
 .image-preview-container h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
+	/* Image preview header */
+	margin-top: 0;
+	margin-bottom: 15px;
+	color: #fff;
+	font-weight: 600;
 }
 
-/* === Control Panel === */
+/* === CONTROL PANEL (BOTTOM BAR) === */
 .control-panel-bottom {
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    background: #181818;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 24px;
-    padding: 12px 32px;
-    box-shadow: 0 -2px 8px #0008;
-    z-index: 100;
-    box-sizing: border-box;
+	/* Fixed bottom control panel with all the action buttons */
+	position: fixed;
+	left: 0;
+	bottom: 0;
+	width: 100%;
+	background: #181818;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 24px;
+	padding: 12px 32px;
+	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.5);
+	z-index: 100;
+	box-sizing: border-box;
 }
 
 .divider {
-    width: 1px;
-    height: 24px;
-    background: #444;
-    margin: 0 8px;
+	/* Visual separator between button groups */
+	width: 1px;
+	height: 24px;
+	background: #444;
+	margin: 0 8px;
 }
 
+/* === FORM INPUTS === */
 .box-input {
-    padding: 10px 16px;
-    border-radius: 6px;
-    border: 1px solid #444;
-    font-size: 1rem;
-    background: #232323;
-    color: #fff;
-    width: 140px;
-    outline: none;
-    transition: border-color 0.2s ease-in-out;
-    margin: 0;
-    line-height: normal;
+	/* Text input for box number entry */
+	padding: 10px 16px;
+	border-radius: 6px;
+	border: 1px solid #444;
+	font-size: 1rem;
+	background: #232323;
+	color: #fff;
+	width: 140px;
+	outline: none;
+	transition: border-color 0.2s ease-in-out;
+	margin: 0;
+	line-height: normal;
 }
 
 .box-input:focus {
-    border-color: #4caf50;
+	/* Focus state for box input */
+	border-color: #4caf50;
 }
 
+/* === BUTTONS === */
 .button {
-    background-color: #4caf50;
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    height: 40px;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s ease-in-out;
-    min-width: 120px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-    margin: 0;
+	/* Base button styling used for all control panel buttons */
+	background-color: #4caf50;
+	border: none;
+	color: white;
+	padding: 10px 20px;
+	height: 40px;
+	font-size: 0.9rem;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 600;
+	transition: all 0.2s ease-in-out;
+	min-width: 120px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	white-space: nowrap;
+	margin: 0;
 }
 
 .button:hover {
-    background-color: #43a047;
-    transform: translateY(-1px);
+	/* Button hover state */
+	background-color: #43a047;
+	transform: translateY(-1px);
 }
 
 .button:disabled {
-    background-color: #333;
-    color: #666;
-    cursor: not-allowed;
-    transform: none;
+	/* Disabled button state */
+	background-color: #333;
+	color: #666;
+	cursor: not-allowed;
+	transform: none;
 }
 
 .button.secondary {
-    background-color: #555;
-    margin: 0 8px;
+	/* Secondary button variant (Undo, Undo All) */
+	background-color: #555;
+	margin: 0 8px;
 }
 
 .button.secondary:hover {
-    background-color: #666;
-}
-
-/* Editable Table Styles */
-.main-table td {
-    cursor: pointer;
-    position: relative;
-    transition: background-color 0.2s;
-}
-
-.main-table td:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.main-table td.editing {
-    padding: 0;
-}
-
-.main-table td input {
-    width: 100%;
-    height: 100%;
-    padding: 8px 12px;
-    border: none;
-    background: #333;
-    color: white;
-    font-size: 1rem;
-    font-family: inherit;
-    box-sizing: border-box;
-}
-
-.main-table td input:focus {
-    outline: 2px solid #4caf50;
-    background: #444;
-}
-
-/* Table alignment */
-.main-table tr,
-.side-table tr {
-    height: 42px; /* Fixed height for all rows */
-}
-
-.main-table-container,
-.side-table-container {
-    flex: 1;
-    max-width: 45%;
-}
-
-.side-table-container {
-    margin-left: 20px;
-}
-
-.main-table td,
-.side-table td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px;
-}
-
-.main-table td,
-.side-table td {
-    vertical-align: middle;
-}
-
-.empty-row td {
-    background: rgba(255, 255, 255, 0.05);
-    height: 42px;  /* Match the height of data rows */
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-.edit-controls {
-    display: flex;
-    justify-content: flex-end;
-    padding: 16px 0 0 0;
-}
-
-/* Duplicate entries styling */
-.duplicate-group {
-    background: rgba(255, 152, 0, 0.1) !important;
-}
-
-.duplicate-header {
-    font-weight: bold;
-    color: #ff9800;
-    margin-bottom: 8px;
-}
-
-.duplicate-entry {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px;
-    border: 1px solid rgba(255, 152, 0, 0.3);
-    margin: 4px 0;
-    border-radius: 4px;
-}
-
-.keep-button {
-    background: #ff9800;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-left: auto;
-}
-
-.keep-button:hover {
-    background: #f57c00;
-}
-
-.source-tag {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.8em;
-    margin-left: 8px;
-    white-space: nowrap;
-}
-
-/* Checkbox styling */
-.main-table td input[type="checkbox"] {
-    width: auto;
-    height: auto;
-    margin: 8px 12px;
+	/* Secondary button hover state */
+	background-color: #666;
 }
