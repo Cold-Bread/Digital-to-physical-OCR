@@ -45,3 +45,9 @@ Features:
   - vertical scroll is fine
   - 6px padding-left, right, and bottom
   - padding-top is your choice, perferably remaining numericaly consisitent with table
+
+---
+
+BACKEND FETURE REQUESTS:
+
+- remove all instances of ocr1-3. change to paddle OCR (make seperate branch and fix both front and backend)
