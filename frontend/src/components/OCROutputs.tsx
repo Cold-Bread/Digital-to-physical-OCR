@@ -139,8 +139,8 @@ const OCROutputs = ({ boxData = [], selectedFile = null }: OCROutputsProps) => {
 					/>
 				</div>
 			</div>
-
-			{selectedFile && (
+			{/* Image display code for reference purposes, remove in opWiggleImage branch */}
+			{/* {selectedFile && (
 				<div className="image-preview-container">
 					<h3>Original Image</h3>
 					<img
@@ -149,7 +149,7 @@ const OCROutputs = ({ boxData = [], selectedFile = null }: OCROutputsProps) => {
 						className="image-preview"
 					/>
 				</div>
-			)}
+			)} */}
 		</div>
 	);
 };

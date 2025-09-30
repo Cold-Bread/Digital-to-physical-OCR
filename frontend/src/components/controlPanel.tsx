@@ -138,9 +138,15 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 				throw new Error(`OCR processing failed: ${ocrRes.statusText}`);
 			}
 
-			const ocrData: BackendResponse = await ocrRes.json();
-			console.log("Received OCR data:", ocrData);
-			setOCRResponse(ocrData, selectedFile.name);
+			const ocrData = await ocrRes.json();
+			console.log("Raw OCR response:", ocrData);
+
+			// Transform the response to match our expected format
+			const transformedData: BackendResponse = {
+				paddleOCR: ocrData.ocr1 || ocrData.paddleOCR || [],
+			};
+
+			setOCRResponse(transformedData, selectedFile.name);
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "An unknown error occurred";
