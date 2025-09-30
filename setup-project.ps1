@@ -139,5 +139,10 @@ if (-not $BackendOnly) {
     Pop-Location
     Write-Host "Frontend setup complete."
 }
+# Deactivate any activated virtual environments
+if ($env:VIRTUAL_ENV) {
+    & deactivate
+}
 
 Write-Host "Project setup complete."
+
