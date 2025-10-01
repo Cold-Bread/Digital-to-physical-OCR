@@ -1,12 +1,13 @@
 import { Patient, OCRResult } from "../types/backendResponse";
 import { useOCRStore } from "../store/useOCRStore";
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import {
 	DataGrid,
 	GridColDef,
 	GridCellEditStopReasons,
 } from "@mui/x-data-grid";
 import Fuse from "fuse.js";
+import "./DataGrid.css"; // Import MUI DataGrid styling
 
 interface OCROutputsProps {
 	boxData: Patient[];
@@ -87,7 +88,7 @@ const OCROutputs = ({ boxData = [], selectedFile = null }: OCROutputsProps) => {
 	};
 
 	// Handle OCR cell edits
-	const handleOcrCellEditStop = (params: any, event: any) => {
+	const handleOcrCellEditStop = (params: any) => {
 		if (
 			params.reason === GridCellEditStopReasons.enterKeyDown ||
 			params.reason === GridCellEditStopReasons.cellFocusOut
@@ -138,17 +139,6 @@ const OCROutputs = ({ boxData = [], selectedFile = null }: OCROutputsProps) => {
 					/>
 				</div>
 			</div>
-
-			{selectedFile && (
-				<div className="image-preview-container">
-					<h3>Original Image</h3>
-					<img
-						src={URL.createObjectURL(selectedFile)}
-						alt="Original document"
-						className="image-preview"
-					/>
-				</div>
-			)}
 		</div>
 	);
 };
