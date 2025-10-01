@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import ImagePopup from "./ImagePopup";
 import { useOCRStore } from "../store/useOCRStore";
 import { BackendResponse, BoxResponse } from "../types/backendResponse";
 
@@ -18,6 +19,9 @@ interface ControlPanelProps {
 const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 	const [boxNumber, setBoxNumber] = useState("");
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [showImagePopup, setShowImagePopup] = useState(false);
+	// Popup state for reset
+	const [popupKey, setPopupKey] = useState(0);
 
 	const setOCRResponse = useOCRStore((s) => s.setOCRResponse);
 	const setPatientList = useOCRStore((s) => s.setPatientList);
@@ -170,70 +174,104 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 		}
 	};
 
-	return (
-		<div className="control-panel control-panel-bottom">
-			<input
-				type="text"
-				className="box-input"
-				placeholder="Enter Box Number (e.g., TCBOX77)"
-				value={boxNumber}
-				onChange={(e) => setBoxNumber(e.target.value.toUpperCase())}
-				disabled={isLoading}
-			/>
-			<input
-				type="file"
-				accept="image/*"
-				ref={fileInputRef}
-				style={{ display: "none" }}
-				onChange={handleFileChange}
-				disabled={isLoading}
-			/>
-			<button
-				className="button"
-				onClick={() => fileInputRef.current?.click()}
-				disabled={isLoading}
-			>
-				{selectedFile ? selectedFile.name : "Choose Image"}
-			</button>
-			<button
-				className="button"
-				onClick={handleGetBox}
-				disabled={!boxNumber || isLoading}
-			>
-				{isLoading ? "Loading..." : "Get Box"}
-			</button>
-			<button
-				className="button"
-				onClick={handleProcessImage}
-				disabled={!selectedFile || isLoading}
-			>
-				{isLoading ? "Processing..." : "Send Image"}
-			</button>
-			<div className="divider"></div>
-			<button
-				className="button secondary"
-				onClick={undo}
-				disabled={isLoading || history.length <= 1}
-			>
-				Undo
-			</button>
-			<button
-				className="button secondary"
-				onClick={undoAll}
-				disabled={isLoading || history.length <= 1}
-			>
-				Undo All
-			</button>
-			<div className="divider"></div>
-			<button
-				className="button primary"
-				onClick={handleSaveToSheet}
-				disabled={isLoading || patientList.length === 0}
-			>
-				Save to Sheet
-			</button>
-		</div>
-	);
+		return (
+			<div className="control-panel control-panel-bottom" style={{ position: "relative" }}>
+				<input
+					type="text"
+					className="box-input"
+					placeholder="Enter Box Number (e.g., TCBOX77)"
+					value={boxNumber}
+					onChange={(e) => setBoxNumber(e.target.value.toUpperCase())}
+					disabled={isLoading}
+				/>
+				<input
+					type="file"
+					accept="image/*"
+					ref={fileInputRef}
+					style={{ display: "none" }}
+					onChange={handleFileChange}
+					disabled={isLoading}
+				/>
+				<button
+					className="button"
+					onClick={() => fileInputRef.current?.click()}
+					disabled={isLoading}
+				>
+					{selectedFile ? selectedFile.name : "Choose Image"}
+				</button>
+				<button
+					className="button"
+					onClick={handleGetBox}
+					disabled={!boxNumber || isLoading}
+				>
+					{isLoading ? "Loading..." : "Get Box"}
+				</button>
+				<button
+					className="button"
+					onClick={handleProcessImage}
+					disabled={!selectedFile || isLoading}
+				>
+					{isLoading ? "Processing..." : "Send Image"}
+				</button>
+				<div className="divider"></div>
+				<button
+					className="button secondary"
+					onClick={undo}
+					disabled={isLoading || history.length <= 1}
+				>
+					Undo
+				</button>
+				<button
+					className="button secondary"
+					onClick={undoAll}
+					disabled={isLoading || history.length <= 1}
+				>
+					Undo All
+				</button>
+				<div className="divider"></div>
+				<button
+					className="button primary"
+					onClick={handleSaveToSheet}
+					disabled={isLoading || patientList.length === 0}
+				>
+					Save to Sheet
+				</button>
+				{/* View Picture button hugs right wall */}
+				<button
+					className="button view-picture-btn"
+					style={{
+						position: "absolute",
+						right: 0,
+						top: 0,
+						margin: 4,
+						background: showImagePopup ? "#43a047" : "#1976d2", // green when open, blue when closed
+						color: showImagePopup ? "#fff" : "#fff",
+						zIndex: 10,
+					}}
+							onClick={() => {
+								if (!selectedFile) return;
+								if (showImagePopup) {
+									// Reset popup by changing key
+									setPopupKey((k) => k + 1);
+								} else {
+									setShowImagePopup(true);
+								}
+							}}
+							disabled={!selectedFile}
+					title={selectedFile ? (showImagePopup ? "Reset Image" : "View Picture") : "No image selected"}
+						>
+					{showImagePopup ? "Reset Image" : selectedFile ? "View Picture" : "No image selected"}
+						</button>
+						{/* ImagePopup component */}
+						<ImagePopup
+							key={popupKey}
+							file={selectedFile}
+							open={showImagePopup}
+							onClose={() => setShowImagePopup(false)}
+							anchorRight
+						/>
+			</div>
+		);
 };
 
 export default ControlPanel;
