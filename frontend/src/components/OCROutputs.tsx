@@ -143,18 +143,6 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 						hideFooter
 						disableRowSelectionOnClick
 						getRowClassName={(params) => getBoxRowClass(params.row)}
-						sx={{
-							width: "100%",
-							height: "100%",
-							maxWidth: "100%",
-							"& .MuiDataGrid-root": {
-								overflow: "hidden",
-							},
-							"& .MuiDataGrid-virtualScroller": {
-								overflowY: "auto",
-								overflowX: "hidden",
-							},
-						}}
 					/>
 				</div>
 			</div>
@@ -171,18 +159,6 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 						onProcessRowUpdateError={(error) =>
 							console.error("Row update error:", error)
 						}
-						sx={{
-							width: "100%",
-							height: "100%",
-							maxWidth: "100%",
-							"& .MuiDataGrid-root": {
-								overflow: "hidden",
-							},
-							"& .MuiDataGrid-virtualScroller": {
-								overflowY: "auto",
-								overflowX: "hidden",
-							},
-						}}
 					/>
 				</div>
 			</div>
