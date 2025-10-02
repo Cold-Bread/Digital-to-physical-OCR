@@ -61,3 +61,17 @@ env.bak/
 venv.bak/
 venvPaddle310
 venvMain
+
+# Model training data and images
+backend/ocr_paddle_service/model_training/converted_test_dataset/
+backend/ocr_paddle_service/model_training/working_results/
+backend/ocr_paddle_service/model_training/training_venv/
+
+# Ignore all image files in model_training directory
+backend/ocr_paddle_service/model_training/**/*.jpg
+backend/ocr_paddle_service/model_training/**/*.jpeg
+backend/ocr_paddle_service/model_training/**/*.png
+backend/ocr_paddle_service/model_training/**/*.bmp
+backend/ocr_paddle_service/model_training/**/*.gif
+backend/ocr_paddle_service/model_training/**/*.tiff
+backend/ocr_paddle_service/model_training/**/*.webp

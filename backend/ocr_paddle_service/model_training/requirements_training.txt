@@ -1,0 +1,3 @@
+paddleocr
+python-multipart
+opencv-python-headless
