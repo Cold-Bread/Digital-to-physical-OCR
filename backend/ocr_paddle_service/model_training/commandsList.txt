@@ -1,0 +1,110 @@
+================================================================================
+                           MODEL TRAINING SCRIPTS COMMANDS
+================================================================================
+
+1. ANALYZE_DATASET.PY
+   Purpose: Analyze ground truth dataset characteristics
+   
+   Basic usage with label file:
+   python analyze_dataset.py --label_file "converted_test_dataset\val_label.txt"
+   
+   With images directory for comprehensive analysis:
+   python analyze_dataset.py --label_file "converted_test_dataset\val_label.txt" \
+                            --images_dir "converted_test_dataset\val_images"
+
+--------------------------------------------------------------------------------
+
+2. CREATE_EVALUATION_DATASET.PY
+   Purpose: Create evaluation dataset from CSV
+   
+   Basic usage:
+   python create_evaluation_dataset.py --csv_file "path\to\your\data.csv" \
+                                      --images_dir "path\to\images" \
+                                      --output_dir "evaluation_dataset"
+   
+   With maximum samples limit:
+   python create_evaluation_dataset.py --csv_file "path\to\your\data.csv" \
+                                      --images_dir "path\to\images" \
+                                      --output_dir "evaluation_dataset" \
+                                      --max_samples 100
+
+--------------------------------------------------------------------------------
+
+3. EVALUATE_BASELINE.PY
+   Purpose: Quick baseline model evaluation
+   
+   Basic usage:
+   python evaluate_baseline.py --test_dir "converted_test_dataset\val_images"
+   
+   With custom output file:
+   python evaluate_baseline.py --test_dir "converted_test_dataset\val_images" \
+                               --output "baseline_results.json"
+   
+   Limit number of images processed:
+   python evaluate_baseline.py --test_dir "converted_test_dataset\val_images" \
+                               --max_images 50
+
+--------------------------------------------------------------------------------
+
+4. EVALUATE_WITH_GROUND_TRUTH.PY
+   Purpose: Comprehensive evaluation with accuracy metrics
+   
+   Basic usage (looks for val_label.txt in dataset directory):
+   python evaluate_with_ground_truth.py --dataset_dir "converted_test_dataset"
+   
+   With specific label file:
+   python evaluate_with_ground_truth.py --dataset_dir "converted_test_dataset" \
+                                        --label_file "converted_test_dataset\val_label.txt"
+   
+   With custom output and image limit:
+   python evaluate_with_ground_truth.py --dataset_dir "converted_test_dataset" \
+                                        --output "ground_truth_results.json" \
+                                        --max_images 100
+
+--------------------------------------------------------------------------------
+
+5. TEST_GROUND_TRUTH_EVALUATION.PY
+   Purpose: Quick test run
+   
+   Simple run (no arguments needed, uses default paths):
+   python test_ground_truth_evaluation.py
+
+--------------------------------------------------------------------------------
+
+6. TRAIN_CUSTOM_MODEL.PY
+   Purpose: Custom model training (advanced)
+   
+   Evaluate current model:
+   python train_custom_model.py --dataset_path "your_dataset_path" \
+                                --test_images "converted_test_dataset\val_images" \
+                                --action evaluate
+   
+   Prepare training data:
+   python train_custom_model.py --dataset_path "your_dataset_path" \
+                                --action prepare \
+                                --dataset_format txt
+   
+   Create training configuration:
+   python train_custom_model.py --dataset_path "your_dataset_path" \
+                                --action config
+
+================================================================================
+                              TYPICAL WORKFLOW ORDER
+================================================================================
+
+1. Start with testing:
+   python test_ground_truth_evaluation.py
+
+2. Analyze your dataset:
+   python analyze_dataset.py --label_file "converted_test_dataset\val_label.txt" --images_dir "converted_test_dataset\val_images"
+
+3. Baseline evaluation:
+   python evaluate_baseline.py --test_dir "converted_test_dataset\val_images" --max_images 50
+
+4. Comprehensive evaluation:
+   python evaluate_with_ground_truth.py --dataset_dir "converted_test_dataset" --max_images 100
+
+5. Custom training (if needed):
+   Use train_custom_model.py with appropriate parameters
+
+================================================================================
