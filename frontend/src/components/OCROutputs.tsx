@@ -1,11 +1,7 @@
-import { Patient, OCRResult } from "../types/backendResponse";
+import { Patient } from "../types/backendResponse";
 import { useOCRStore } from "../store/useOCRStore";
 import { useMemo } from "react";
-import {
-	DataGrid,
-	GridColDef,
-	GridCellEditStopReasons,
-} from "@mui/x-data-grid";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Fuse from "fuse.js";
 import "./DataGrid.css"; // Import MUI DataGrid styling
 
@@ -14,8 +10,24 @@ interface OCROutputsProps {
 	selectedFile: File | null;
 }
 
-const OCROutputs = ({ boxData = [], selectedFile = null }: OCROutputsProps) => {
+const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 	const allOCRResults = useOCRStore((s) => s.allOCRResults || []);
+	const updateOCRResult = useOCRStore((s) => s.updateOCRResult);
+
+	// Debug logging for OCR data structure (only when we have results)
+	if (allOCRResults.length > 0) {
+		console.log("=== OCR DEBUG INFO ===");
+		console.log("Normalized OCR Results:", allOCRResults);
+		console.log(
+			"Sample names:",
+			allOCRResults.slice(0, 3).map((r) => ({
+				original: r.name,
+				dob: r.dob,
+				score: r.score,
+			}))
+		);
+		console.log("=====================");
+	}
 
 	// Fuzzy matching setup
 	const fuseOptions = {
@@ -25,10 +37,9 @@ const OCROutputs = ({ boxData = [], selectedFile = null }: OCROutputsProps) => {
 	};
 	const fuse = new Fuse(boxData, fuseOptions);
 
-	const ocrData = useMemo(
-		() => allOCRResults.filter((r) => !r.isPotentialDuplicate || r.isResolved),
-		[allOCRResults]
-	);
+	const ocrData = useMemo(() => {
+		return allOCRResults;
+	}, [allOCRResults]);
 
 	// DataGrid columns for Patient (read-only)
 	const boxColumns: GridColDef[] = [
@@ -67,6 +78,19 @@ const OCROutputs = ({ boxData = [], selectedFile = null }: OCROutputsProps) => {
 	];
 	const ocrRows = ocrData.map((row, idx) => ({ ...row, id: idx }));
 
+	// Debug logging for DataGrid rows (only when we have results)
+	if (ocrRows.length > 0) {
+		console.log("OCR Rows for DataGrid:", ocrRows);
+		console.log(
+			"OCR Rows sample score values:",
+			ocrRows.map((r) => ({
+				name: r.name,
+				score: r.score,
+				scoreType: typeof r.score,
+			}))
+		);
+	}
+
 	// Fuzzy match status for each box row
 	const getBoxRowClass = (patient: Patient) => {
 		if (!patient || !patient.name) return "row-no-match";
@@ -87,55 +111,78 @@ const OCROutputs = ({ boxData = [], selectedFile = null }: OCROutputsProps) => {
 		return bestType === "partial" ? "row-partial-match" : "row-no-match";
 	};
 
-	// Handle OCR cell edits
-	const handleOcrCellEditStop = (params: any) => {
-		if (
-			params.reason === GridCellEditStopReasons.enterKeyDown ||
-			params.reason === GridCellEditStopReasons.cellFocusOut
-		) {
-			const { id, field, value } = params;
-			const index = typeof id === "number" ? id : parseInt(id, 10);
-			const updated = { ...ocrData[index] } as OCRResult;
-			(updated as any)[field as keyof OCRResult] = value;
-			// You may want to update the store here if you want edits to persist
-			// For now, just log
-			// updateOCRResult(index, updated);
-			// If you want to update the store, implement updateOCRResult in your store
+	// Handle OCR cell edits - the proper way with processRowUpdate
+	const handleProcessRowUpdate = (newRow: any, oldRow: any) => {
+		console.log("🚀 Processing row update:", { newRow, oldRow });
+
+		const ocrResult = ocrData.find((r) => r.id === newRow.id);
+		if (ocrResult && ocrResult.id) {
+			// Find what changed
+			const changes: any = {};
+			Object.keys(newRow).forEach((key) => {
+				if (newRow[key] !== oldRow[key]) {
+					changes[key] = newRow[key];
+				}
+			});
+
+			console.log("📋 Changes detected:", changes);
+			updateOCRResult(ocrResult.id, changes);
 		}
+
+		return newRow; // Return the new row to confirm the update
 	};
 
 	return (
 		<div className="outputs-container">
 			<div className="main-table-container">
 				<h3>Box Records</h3>
-				<div style={{ height: 400, width: "100%" }}>
+				<div className="table-content">
 					<DataGrid
 						rows={boxRows}
 						columns={boxColumns}
-						initialState={{
-							pagination: { paginationModel: { pageSize: 10, page: 0 } },
-						}}
-						pageSizeOptions={[10, 25, 50]}
+						hideFooter
 						disableRowSelectionOnClick
 						getRowClassName={(params) => getBoxRowClass(params.row)}
-						autoHeight
+						sx={{
+							width: "100%",
+							height: "100%",
+							maxWidth: "100%",
+							"& .MuiDataGrid-root": {
+								overflow: "hidden",
+							},
+							"& .MuiDataGrid-virtualScroller": {
+								overflowY: "auto",
+								overflowX: "hidden",
+							},
+						}}
 					/>
 				</div>
 			</div>
 
 			<div className="side-table-container">
 				<h3>OCR Results</h3>
-				<div style={{ height: 400, width: "100%" }}>
+				<div className="table-content">
 					<DataGrid
 						rows={ocrRows}
 						columns={ocrColumns}
-						initialState={{
-							pagination: { paginationModel: { pageSize: 10, page: 0 } },
-						}}
-						pageSizeOptions={[10, 25, 50]}
+						hideFooter
 						disableRowSelectionOnClick
-						onCellEditStop={handleOcrCellEditStop}
-						autoHeight
+						processRowUpdate={handleProcessRowUpdate}
+						onProcessRowUpdateError={(error) =>
+							console.error("Row update error:", error)
+						}
+						sx={{
+							width: "100%",
+							height: "100%",
+							maxWidth: "100%",
+							"& .MuiDataGrid-root": {
+								overflow: "hidden",
+							},
+							"& .MuiDataGrid-virtualScroller": {
+								overflowY: "auto",
+								overflowX: "hidden",
+							},
+						}}
 					/>
 				</div>
 			</div>

@@ -3,8 +3,8 @@ import {
 	BackendResponse,
 	BoxResponse,
 	OCRResult,
-	OCRGroup,
 } from "../types/backendResponse";
+import { normalizeOCRResults } from "../utils/ocrNormalization";
 
 type EditHistory = {
 	patientList: BoxResponse;
@@ -15,11 +15,9 @@ interface OCRStore {
 	// OCR results from image processing
 	ocrResponse: BackendResponse | null;
 	allOCRResults: OCRResult[]; // All OCR results across all scans
-	duplicateGroups: OCRGroup[]; // Groups of potential duplicates
 	setOCRResponse: (resp: BackendResponse | null, imageSource: string) => void;
 	addOCRResults: (results: OCRResult[], imageSource: string) => void;
-	resolveDuplicate: (groupId: string, selectedId: string) => void;
-	hasUnresolvedDuplicates: () => boolean;
+	updateOCRResult: (id: string, updatedResult: Partial<OCRResult>) => void;
 
 	// Patient list response from box search
 	patientList: BoxResponse;
@@ -44,21 +42,26 @@ interface OCRStore {
 	// Loading state
 	isLoading: boolean;
 	setIsLoading: (loading: boolean) => void;
-	canProcessNewImage: () => boolean; // Check if we can process a new image
 
 	// Reset function for zero-state
 	resetAll: () => void;
 }
 
+// Simple logging wrapper for store updates
+const logStoreUpdate = (actionName: string, payload?: any) => {
+	if (process.env.NODE_ENV === "development") {
+		console.log(`🏪 ${actionName}:`, payload);
+	}
+};
+
 export const useOCRStore = create<OCRStore>((set, get) => ({
 	// OCR state
 	ocrResponse: null,
 	allOCRResults: [],
-	duplicateGroups: [],
 	matchedResults: new Map(),
 	currentBoxNumber: "",
 
-	// Set OCR response and process for duplicates
+	// Set OCR response and add results
 	setOCRResponse: (resp, imageSource) => {
 		set({ ocrResponse: resp });
 
@@ -91,87 +94,57 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 		}
 	},
 
-	// Add new OCR results and check for duplicates
+	// Add new OCR results
 	addOCRResults: (results, imageSource) => {
+		logStoreUpdate("ADD_OCR_RESULTS", { count: results?.length, imageSource });
 		if (!Array.isArray(results)) {
 			console.warn("Results is not an array:", results);
 			return;
 		}
 
 		const currentResults = [...get().allOCRResults];
-		const newResults = results
-			.filter((result) => result && typeof result === "object" && result.name) // Filter out invalid results
+
+		// Apply normalization to the raw results
+		console.log("🔧 Applying OCR normalization to", results.length, "results");
+		const normalizedResults = normalizeOCRResults(results);
+
+		const newResults = normalizedResults
+			.filter(
+				(result) =>
+					result && typeof result === "object" && (result.name || result.dob)
+			) // Updated filter: require name OR dob
 			.map((result) => ({
 				...result,
-				id: Math.random().toString(36).substr(2, 9), // Generate unique ID
+				id: result.id || Math.random().toString(36).substr(2, 9), // Use existing ID or generate new one
 				imageSource,
-				isPotentialDuplicate: false,
-				isResolved: false,
 			}));
-
-		// Check for duplicates
-		const duplicateGroups: OCRGroup[] = [];
-		const processedNames = new Set<string>();
-
-		[...currentResults, ...newResults].forEach((result) => {
-			if (processedNames.has(result.name)) return;
-			processedNames.add(result.name);
-
-			const duplicates = [...currentResults, ...newResults].filter(
-				(r) =>
-					r.name.toLowerCase() === result.name.toLowerCase() &&
-					(!r.dob || !result.dob || r.dob === result.dob)
-			);
-
-			if (duplicates.length > 1) {
-				const groupId = Math.random().toString(36).substr(2, 9);
-				duplicates.forEach((d) => {
-					d.isPotentialDuplicate = true;
-					d.duplicateGroupId = groupId;
-				});
-
-				duplicateGroups.push({
-					id: groupId,
-					results: duplicates,
-					isResolved: false,
-				});
-			}
-		});
 
 		set({
 			allOCRResults: [...currentResults, ...newResults],
-			duplicateGroups,
+		});
+		logStoreUpdate("OCR_RESULTS_ADDED", {
+			totalCount: currentResults.length + newResults.length,
+			newCount: newResults.length,
+			normalizedCount: normalizedResults.length,
+			originalCount: results.length,
 		});
 	},
 
-	// Resolve a duplicate group
-	resolveDuplicate: (groupId, selectedId) => {
+	// Update an existing OCR result
+	updateOCRResult: (id, updatedFields) => {
 		const currentResults = [...get().allOCRResults];
-		const currentGroups = [...get().duplicateGroups];
+		const index = currentResults.findIndex((r) => r.id === id);
 
-		// Mark all results in the group as resolved
-		currentResults.forEach((result) => {
-			if (result.duplicateGroupId === groupId) {
-				result.isResolved = true;
-				result.isPotentialDuplicate = result.id !== selectedId;
-			}
-		});
-
-		// Mark the group as resolved
-		const groupIndex = currentGroups.findIndex((g) => g.id === groupId);
-		if (groupIndex !== -1) {
-			currentGroups[groupIndex].isResolved = true;
+		if (index !== -1) {
+			currentResults[index] = {
+				...currentResults[index],
+				...updatedFields,
+			};
+			set({ allOCRResults: currentResults });
+			console.log(`Updated OCR result ${id}:`, currentResults[index]);
+		} else {
+			console.warn(`OCR result with id ${id} not found`);
 		}
-
-		set({
-			allOCRResults: currentResults,
-			duplicateGroups: currentGroups,
-		});
-	},
-
-	// Check if there are any unresolved duplicates
-	hasUnresolvedDuplicates: () => {
-		return get().duplicateGroups.some((group) => !group.isResolved);
 	},
 
 	// Match tracking
@@ -281,14 +254,10 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 		}
 	},
 
-	// Loading and validation
+	// Loading state
 	isLoading: false,
 	setIsLoading: (loading) => {
 		set({ isLoading: loading });
-	},
-
-	canProcessNewImage: () => {
-		return !get().hasUnresolvedDuplicates();
 	},
 
 	// Reset everything
@@ -296,7 +265,6 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 		set({
 			ocrResponse: null,
 			allOCRResults: [],
-			duplicateGroups: [],
 			matchedResults: new Map(),
 			currentBoxNumber: "",
 			patientList: [],
