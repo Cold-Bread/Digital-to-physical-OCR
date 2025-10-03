@@ -1,0 +1,123 @@
+/* --- Layout Containers --- */
+.outputs-container-main {
+	padding: 12px;
+	display: flex;
+	flex-direction: row;
+	gap: 12px;
+	height: 100vh;
+	width: 100%;
+	overflow: auto;
+	background-color: #121212; /* slightly darker background */
+	color: #ffffff;
+	font-family: "Inter", "Roboto", sans-serif;
+}
+
+.box-table-container,
+.ocr-table-container {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	border-radius: 12px;
+	padding: 12px;
+	background-color: #1c1c1c;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.box-table-container {
+	flex: 7;
+	max-width: 70vw;
+}
+.ocr-table-container {
+	flex: 3;
+	max-width: 30vw;
+}
+
+/* --- Table Content --- */
+.table-content {
+	flex: 1;
+	width: 100%;
+	min-height: 0;
+	overflow: hidden;
+}
+
+h3 {
+	color: #fafafa;
+	margin-bottom: 10px;
+	font-weight: 600;
+	font-size: 16px;
+}
+
+/* --- DataGrid Styling --- */
+.MuiDataGrid-root {
+	background-color: #1e1e1e !important;
+	color: #e0e0e0 !important;
+	border: none !important;
+	border-radius: 8px !important;
+	font-size: 16px !important;
+	font-weight: 500;
+	font-family: "Inter", "Segoe UI", "Roboto", sans-serif !important;
+	table-layout: fixed; /* prevents pushing columns offscreen */
+}
+
+.MuiDataGrid-columnHeaders {
+	background-color: #2a2a2a !important;
+	color: #fafafa !important;
+	font-weight: 600 !important;
+	font-size: 13px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	border-bottom: 1px solid #444 !important;
+}
+
+.MuiDataGrid-columnHeader {
+	background-color: #2a2a2a !important;
+	color: #fafafa !important;
+}
+
+.MuiDataGrid-columnHeaderTitle {
+	color: #fafafa !important;
+	font-weight: 600 !important;
+}
+
+.MuiDataGrid-cell {
+	border-bottom: 1px solid #333 !important;
+	color: #e0e0e0 !important;
+	font-size: 16px !important;
+	font-weight: 500 !important;
+	font-family: "Inter", "Segoe UI", "Roboto", sans-serif !important;
+}
+
+.MuiDataGrid-row:nth-of-type(even) {
+	background-color: #1f1f1f;
+}
+
+.MuiDataGrid-row:nth-of-type(odd) {
+	background-color: #252525;
+}
+
+.MuiDataGrid-row:hover {
+	background-color: rgba(255, 255, 255, 0.05) !important;
+	transition: background-color 0.2s ease-in-out;
+}
+
+/* --- Match Highlighting --- */
+.row-match {
+	background-color: rgba(76, 175, 80, 0.15) !important;
+	border-left: 4px solid #4caf50 !important;
+}
+
+.row-partial-match {
+	background-color: rgba(255, 193, 7, 0.15) !important;
+	border-left: 4px solid #ffc107 !important;
+}
+
+.row-no-match {
+	background-color: transparent;
+}
+
+/* --- Boolean Icon Overrides --- */
+/* Nice purple for all boolean icons */
+.MuiDataGrid-cell[data-field="is_child_when_joined"] svg {
+	fill: #9c27b0 !important;
+	color: #9c27b0 !important;
+}
