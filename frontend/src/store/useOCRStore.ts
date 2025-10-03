@@ -72,18 +72,15 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 
 		let ocrArray = null;
 
-		// Primary check for expected paddleOCR format
+		// Check for paddleOCR format
 		if (resp.paddleOCR && Array.isArray(resp.paddleOCR)) {
 			ocrArray = resp.paddleOCR;
 		} else {
 			// Fallback: check if response is directly an array
-			const respAny = resp as any;
 			if (Array.isArray(resp)) {
 				ocrArray = resp;
-			} else if (respAny.ocr && Array.isArray(respAny.ocr)) {
-				ocrArray = respAny.ocr;
-			} else if (respAny.results && Array.isArray(respAny.results)) {
-				ocrArray = respAny.results;
+			} else {
+				console.warn("Unexpected OCR response format:", resp);
 			}
 		}
 
@@ -104,18 +101,19 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 
 		const currentResults = [...get().allOCRResults];
 
-		// Apply normalization to the raw results
-		console.log("🔧 Applying OCR normalization to", results.length, "results");
+		// Apply simplified normalization
 		const normalizedResults = normalizeOCRResults(results);
 
 		const newResults = normalizedResults
-			.filter(
-				(result) =>
-					result && typeof result === "object" && (result.name || result.dob)
-			) // Updated filter: require name OR dob
+			.filter((result) => {
+				// Basic filter - normalization already handles most of this
+				const hasName = result && result.name && result.name.trim() !== "";
+				const hasDob = result && result.dob && result.dob.trim() !== "";
+				return result && typeof result === "object" && (hasName || hasDob);
+			})
 			.map((result) => ({
 				...result,
-				id: result.id || Math.random().toString(36).substr(2, 9), // Use existing ID or generate new one
+				id: result.id || Math.random().toString(36).substr(2, 9),
 				imageSource,
 			}));
 

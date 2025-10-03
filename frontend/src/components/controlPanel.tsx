@@ -1,11 +1,6 @@
 import { useRef, useState } from "react";
 import { useOCRStore } from "../store/useOCRStore";
 import { BackendResponse, BoxResponse } from "../types/backendResponse";
-import {
-	normalizeOCRResults,
-	normalizeName,
-	normalizeDate,
-} from "../utils/ocrNormalization";
 import ImagePopup from "./ImagePopup";
 
 // API endpoints configuration
@@ -148,9 +143,9 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 			const ocrData = await ocrRes.json();
 			console.log("Raw OCR response:", ocrData);
 
-			// Transform the response to match our expected format
+			// Backend now returns paddleOCR directly
 			const transformedData: BackendResponse = {
-				paddleOCR: ocrData.ocr1 || ocrData.paddleOCR || [],
+				paddleOCR: ocrData.paddleOCR || [],
 			};
 
 			setOCRResponse(transformedData, selectedFile.name);
@@ -176,45 +171,6 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 			}
 		}
 	};
-
-	// Auto-run normalization test and output results to console
-	console.log("🧪 Testing OCR normalization...");
-
-	// Sample test data based on log findings
-	const testData = [
-		{ id: "1", name: "Cariste AWsin", dob: null, score: 0.695 },
-		{ id: "2", name: "reamp James", dob: null, score: 0.732 },
-		{ id: "3", name: "", dob: "13,6-29-77", score: 0.679 },
-		{ id: "4", name: "Ann Creel", dob: null, score: 0.768 },
-		{ id: "5", name: "", dob: "SOB-15-50", score: 0.655 },
-		{ id: "6", name: "ChRTs CootIg", dob: null, score: 0.622 },
-		{ id: "7", name: "ARKEELIZABETH", dob: null, score: 0.865 },
-		{ id: "8", name: "", dob: "57/46/4", score: 0.592 },
-		{ id: "9", name: "CAssidy SusAnnA", dob: null, score: 0.698 },
-	];
-
-	console.log("📝 Original data:", testData);
-
-	// Test individual functions
-	console.log("🔧 Name normalization tests:");
-	testData.forEach((item) => {
-		if (item.name) {
-			const normalized = normalizeName(item.name);
-			console.log(`  "${item.name}" -> "${normalized}"`);
-		}
-	});
-
-	console.log("📅 Date normalization tests:");
-	testData.forEach((item) => {
-		if (item.dob) {
-			const normalized = normalizeDate(item.dob);
-			console.log(`  "${item.dob}" -> "${normalized}"`);
-		}
-	});
-
-	// Test full normalization
-	const normalized = normalizeOCRResults(testData);
-	console.log("✅ Fully normalized results:", normalized);
 
 	return (
 		<div className="control-panel-main">
