@@ -10,7 +10,7 @@ router = APIRouter()
 # Update if your service uses a different port
 PADDLE_OCR_URL = "http://localhost:8001/ocr"
 
-async def process_ocr(url: str, image_data: bytes, filename: str, text_type: TextType) -> list[str]:
+async def process_ocr(url: str, image_data: bytes, filename: str, text_type: TextType) -> list:
     try:
         response = requests.post(
             url,
@@ -19,8 +19,9 @@ async def process_ocr(url: str, image_data: bytes, filename: str, text_type: Tex
         )
         response.raise_for_status()
         result = response.json()
-        logger.error(f"OCR Response from {url}: {result}")
-        return result.get('text', []) if isinstance(result, dict) else result
+        logger.info(f"OCR Response from {url}: {result}")
+        # PaddleOCR service returns the list directly
+        return result if isinstance(result, list) else []
     except Exception as e:
         logger.error(f"Error processing OCR at {url}: {e}")
         return []
@@ -42,7 +43,7 @@ async def process_image(
             )
         
         return OCRResponse(
-            ocr1 = paddle_ocr_result
+            paddleOCR = paddle_ocr_result
         )
 
     except HTTPException:

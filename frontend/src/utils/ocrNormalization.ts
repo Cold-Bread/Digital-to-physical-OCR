@@ -1,57 +1,21 @@
 import { OCRResult } from "../types/backendResponse";
 
-// Common OCR character substitutions
-const OCR_CORRECTIONS: Record<string, string> = {
-	// Number/Letter confusions
-	"0": "O",
-	"1": "I",
-	"5": "S",
-	"8": "B",
-	"6": "G",
-	O: "0",
-	l: "1",
-	I: "1",
-	S: "5",
-	B: "8",
-	G: "6",
+/**
+ * SIMPLIFIED OCR NORMALIZATION
+ * Let Fuse.js handle fuzzy name matching - we just clean obvious garbage and normalize dates
+ */
 
-	// Common misreads
-	rn: "m",
-	ni: "n",
-	ii: "n",
-	vv: "w",
-	VV: "W",
-	cl: "d",
-	ri: "n",
-	li: "h",
-	ti: "h",
-	hl: "h",
-
-	// Date-specific
-	SOB: "DOB",
-	D0B: "DOB",
-	D08: "DOB",
-	OOB: "DOB",
-};
-
-// Common name prefixes/suffixes patterns
-const NAME_PATTERNS = {
-	prefixes: ["Mr", "Mrs", "Ms", "Dr", "Prof"],
-	suffixes: ["Jr", "Sr", "II", "III", "IV", "V"],
-};
-
-// Date format patterns (regex patterns to identify dates)
+// Date format patterns
 const DATE_PATTERNS = [
 	/^\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{2,4}$/, // MM/DD/YYYY, MM-DD-YY, etc.
-	/^\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{2}$/, // MM/DD/YY
 	/^(DOB|SOB|OOB|D0B|D08)[-:]?\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{2,4}$/i, // DOB:MM/DD/YYYY
-	/^\d{2}[\/\-]\d{2}[\/\-]\d{2,4}$/, // Standard formats
+	/^\d{1,2}[,]\d{1,2}[-]\d{1,2}[-]\d{2,4}$/, // Mixed separators like "13,6-29-77"
+	/^\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{1,4}$/, // Flexible pattern for OCR errors
 ];
 
-// Patterns that indicate non-name content
-const NON_NAME_PATTERNS = [
+// Patterns that indicate complete garbage (not names)
+const GARBAGE_PATTERNS = [
 	/^\d+[A-Z]*$/, // "119400B", "CS4E2"
-	/^[A-Z0-9]{3,}$/, // All caps alphanumeric codes
 	/^\d{2,}\.\d+$/, // Numbers with decimals "DO05.576"
 	/^\d+\s+\d+$/, // Spaced numbers "30 90"
 	/^\d+:\d+$/, // Time-like "006:43033"
@@ -59,115 +23,81 @@ const NON_NAME_PATTERNS = [
 ];
 
 /**
- * Applies basic OCR corrections to text
+ * Check if a name is obviously garbage (not a real name)
  */
-export function applyOCRCorrections(text: string): string {
-	if (!text) return text;
+function isGarbageName(name: string): boolean {
+	if (!name || typeof name !== "string") return true;
+	const trimmed = name.trim();
 
-	let corrected = text;
+	// Must have some letters
+	if (!/[a-zA-Z]/.test(trimmed)) return true;
 
-	// Apply character-level corrections
-	for (const [wrong, right] of Object.entries(OCR_CORRECTIONS)) {
-		// Use word boundaries to avoid over-correction
-		const regex = new RegExp(`\\b${wrong}\\b`, "g");
-		corrected = corrected.replace(regex, right);
-	}
+	// Check against garbage patterns
+	if (GARBAGE_PATTERNS.some((pattern) => pattern.test(trimmed))) return true;
 
-	return corrected;
+	// Must be reasonable length
+	if (trimmed.length < 2 || trimmed.length > 50) return true;
+
+	return false;
 }
 
 /**
- * Normalizes name text - fixes case, common OCR errors, formatting
+ * Basic date normalization - handle OCR prefixes and format
  */
-export function normalizeName(name: string): string {
-	if (!name || typeof name !== "string") return "";
-
-	// Remove leading/trailing whitespace
-	let normalized = name.trim();
-
-	// Skip obviously non-name content
-	if (NON_NAME_PATTERNS.some((pattern) => pattern.test(normalized))) {
-		return "";
-	}
-
-	// Apply OCR corrections
-	normalized = applyOCRCorrections(normalized);
-
-	// Fix common OCR name issues
-	normalized = normalized
-		// Fix common letter combinations
-		.replace(/rn/g, "m") // "reamp" -> "ream" -> likely "ream" but closer to real name
-		.replace(/ChRTs/g, "Chris") // "ChRTs" -> "Chris"
-		.replace(/([a-z])([A-Z])/g, "$1 $2") // "CAssidy" -> "C Assidy", "SusAnnA" -> "Sus Ann A"
-
-		// Clean up multiple spaces
-		.replace(/\s+/g, " ")
-
-		// Convert to proper case (Title Case)
-		.toLowerCase()
-		.replace(/\b\w+/g, (word) => {
-			// Handle special cases for common name prefixes/suffixes
-			const upper = word.toUpperCase();
-			if (
-				NAME_PATTERNS.prefixes.includes(word) ||
-				NAME_PATTERNS.suffixes.includes(upper)
-			) {
-				return upper;
-			}
-			// Handle names like "McDonald", "MacLeod", "O'Connor"
-			if (
-				word.startsWith("mc") ||
-				word.startsWith("mac") ||
-				word.includes("'")
-			) {
-				return word.charAt(0).toUpperCase() + word.slice(1);
-			}
-			// Standard title case
-			return word.charAt(0).toUpperCase() + word.slice(1);
-		});
-
-	return normalized.trim();
-}
-
-/**
- * Parses and normalizes date strings
- */
-export function normalizeDate(dateStr: string): string | null {
+function normalizeDate(dateStr: string): string | null {
 	if (!dateStr || typeof dateStr !== "string") return null;
 
 	let cleaned = dateStr.trim();
+	console.log(`🗓️ Normalizing date: "${dateStr}" -> cleaned: "${cleaned}"`);
 
-	// Remove common OCR prefixes
+	// Remove common OCR prefixes (SOB -> DOB, etc.)
 	cleaned = cleaned.replace(/^(DOB|SOB|OOB|D0B|D08)[-:]?\s*/i, "");
-
-	// Apply basic OCR corrections
-	cleaned = applyOCRCorrections(cleaned);
+	console.log(`After prefix removal: "${cleaned}"`);
 
 	// Skip obviously invalid dates
-	if (cleaned.length < 6 || cleaned.includes("lary")) {
+	if (
+		cleaned.length < 5 ||
+		cleaned.includes("lary") ||
+		cleaned.includes("ary")
+	) {
+		console.log(`Skipping invalid date: "${cleaned}"`);
 		return null;
 	}
 
-	// Try to match date patterns
+	// Normalize separators
+	cleaned = cleaned.replace(/[,\-]/g, "/");
+	console.log(`After separator normalization: "${cleaned}"`);
+
+	// Check if it looks like a date
 	const isDateLike = DATE_PATTERNS.some((pattern) => pattern.test(cleaned));
+	console.log(`Date pattern match: ${isDateLike} for "${cleaned}"`);
+
 	if (!isDateLike) {
+		console.log(`No pattern match for: "${cleaned}"`);
 		return null;
 	}
 
-	// Normalize separators to forward slashes
-	cleaned = cleaned.replace(/[-,]/g, "/");
-
-	// Try to parse and validate the date
+	// Try to parse
 	try {
 		const parts = cleaned.split("/");
-		if (parts.length !== 3) return null;
+		if (parts.length !== 3) {
+			console.log(`Invalid parts count: ${parts.length} for "${cleaned}"`);
+			return null;
+		}
 
 		let [month, day, year] = parts.map((p) => parseInt(p, 10));
+		console.log(`Parsed parts: month=${month}, day=${day}, year=${year}`);
+
+		// Handle obvious OCR errors (swap month/day if month > 12)
+		if (month > 12 && day <= 12) {
+			[month, day] = [day, month];
+			console.log(`Swapped month/day: month=${month}, day=${day}`);
+		}
 
 		// Handle 2-digit years
 		if (year < 100) {
-			// Assume 1900s for years > 30, 2000s for years <= 30
 			year += year > 30 ? 1900 : 2000;
+			console.log(`Adjusted year: ${year}`);
 		}
 
 		// Basic validation
@@ -179,13 +109,17 @@ export function normalizeDate(dateStr: string): string | null {
 			year < 1900 ||
 			year > 2030
 		) {
+			console.log(
+				`Validation failed: month=${month}, day=${day}, year=${year}`
+			);
 			return null;
 		}
 
-		// Return in MM/DD/YYYY format
-		return `${month.toString().padStart(2, "0")}/${day
+		const result = `${month.toString().padStart(2, "0")}/${day
 			.toString()
 			.padStart(2, "0")}/${year}`;
+		console.log(`✅ Successfully normalized date: "${dateStr}" -> "${result}"`);
+		return result;
 	} catch (error) {
 		console.warn("Date parsing error:", error, "for date:", dateStr);
 		return null;
@@ -193,30 +127,7 @@ export function normalizeDate(dateStr: string): string | null {
 }
 
 /**
- * Checks if a string looks like a valid name
- */
-function isValidName(name: string): boolean {
-	if (!name || typeof name !== "string") return false;
-
-	const trimmed = name.trim();
-
-	// Must have letters
-	if (!/[a-zA-Z]/.test(trimmed)) return false;
-
-	// Check against non-name patterns
-	if (NON_NAME_PATTERNS.some((pattern) => pattern.test(trimmed))) return false;
-
-	// Must be reasonable length
-	if (trimmed.length < 2 || trimmed.length > 50) return false;
-
-	// Should not be mostly numbers
-	const letterCount = (trimmed.match(/[a-zA-Z]/g) || []).length;
-	const totalCount = trimmed.replace(/\s/g, "").length;
-	return letterCount / totalCount >= 0.5;
-}
-
-/**
- * Checks if a string looks like a valid date
+ * Check if a string is a valid date
  */
 function isValidDate(dateStr: string): boolean {
 	if (!dateStr || typeof dateStr !== "string") return false;
@@ -224,7 +135,16 @@ function isValidDate(dateStr: string): boolean {
 }
 
 /**
- * Combines adjacent OCR results where one has name and other has DOB
+ * Check if a string is a valid name (not garbage)
+ */
+function isValidName(name: string): boolean {
+	if (!name || typeof name !== "string") return false;
+	return !isGarbageName(name);
+}
+
+/**
+ * Combine adjacent entries where one has name and other has DOB
+ * This handles the backend's stacked entry detection
  */
 function combineStackedEntries(results: OCRResult[]): OCRResult[] {
 	if (!results || results.length === 0) return results;
@@ -236,19 +156,22 @@ function combineStackedEntries(results: OCRResult[]): OCRResult[] {
 		const current = results[i];
 		const next = i + 1 < results.length ? results[i + 1] : null;
 
-		// Check if current and next can be combined
-		if (next && shouldCombineEntries(current, next)) {
-			const combinedEntry: OCRResult = {
+		// Simple combining logic - current has name, next has DOB
+		if (
+			next &&
+			current.name &&
+			current.name.trim() !== "" &&
+			(!current.dob || current.dob.trim() === "") &&
+			(!next.name || next.name.trim() === "") &&
+			next.dob &&
+			next.dob.trim() !== ""
+		) {
+			console.log(`🔗 Combining entries: "${current.name}" + "${next.dob}"`);
+			combined.push({
 				...current,
-				name: current.name || next.name || "",
-				dob: current.dob || next.dob || null,
-				// Use the higher confidence score
+				dob: next.dob,
 				score: Math.max(current.score || 0, next.score || 0),
-				// Combine IDs or create new one
-				id: current.id || next.id || Math.random().toString(36).substr(2, 9),
-			};
-
-			combined.push(combinedEntry);
+			});
 			i += 2; // Skip both entries
 		} else {
 			combined.push(current);
@@ -260,33 +183,19 @@ function combineStackedEntries(results: OCRResult[]): OCRResult[] {
 }
 
 /**
- * Determines if two OCR entries should be combined
- */
-function shouldCombineEntries(current: OCRResult, next: OCRResult): boolean {
-	// One should have name, other should have DOB
-	const currentHasName = isValidName(current.name);
-	const currentHasDOB = isValidDate(current.dob || "");
-	const nextHasName = isValidName(next.name);
-	const nextHasDOB = isValidDate(next.dob || "");
-
-	// Combine if:
-	// 1. Current has name but no DOB, next has DOB but no name
-	// 2. Current has DOB but no name, next has name but no DOB
-	return (
-		(currentHasName && !currentHasDOB && !nextHasName && nextHasDOB) ||
-		(!currentHasName && currentHasDOB && nextHasName && !nextHasDOB)
-	);
-}
-
-/**
- * Main normalization function - applies all normalization steps
+ * SIMPLIFIED normalization - minimal processing, let Fuse handle the fuzzy matching
  */
 export function normalizeOCRResults(results: OCRResult[]): OCRResult[] {
 	if (!results || results.length === 0) return results;
 
-	console.log("🔧 Starting OCR normalization...", results.length, "results");
+	console.log(
+		"🔧 Starting SIMPLIFIED OCR normalization...",
+		results.length,
+		"results"
+	);
+	console.log("Raw input:", results);
 
-	// Step 1: Combine stacked entries
+	// Step 1: Combine stacked entries (name + DOB pairs)
 	let normalized = combineStackedEntries(results);
 	console.log(
 		"📋 After combining stacked entries:",
@@ -294,34 +203,51 @@ export function normalizeOCRResults(results: OCRResult[]): OCRResult[] {
 		"results"
 	);
 
-	// Step 2: Normalize individual entries
-	normalized = normalized.map((result) => {
-		const normalizedName = result.name ? normalizeName(result.name) : "";
-		const normalizedDOB = result.dob ? normalizeDate(result.dob) : null;
+	// Step 2: Minimal cleaning - just remove garbage and normalize dates
+	normalized = normalized.map((result, index) => {
+		console.log(`\n🔍 Processing entry ${index}:`, result);
+
+		// Keep original name if it's not garbage, just trim whitespace
+		const cleanName =
+			result.name && !isGarbageName(result.name) ? result.name.trim() : "";
+
+		// Normalize date if present
+		const cleanDate = result.dob ? normalizeDate(result.dob) : null;
+
+		console.log(`  Original: name="${result.name}", dob="${result.dob}"`);
+		console.log(`  Cleaned: name="${cleanName}", dob="${cleanDate}"`);
 
 		return {
 			...result,
-			name: normalizedName,
-			dob: normalizedDOB,
+			name: cleanName,
+			dob: cleanDate,
 		};
 	});
 
-	// Step 3: Filter out invalid entries
-	const filtered = normalized.filter((result) => {
-		const hasValidName = isValidName(result.name);
-		const hasValidDOB = isValidDate(result.dob || "");
+	// Step 3: Filter out completely empty entries
+	const filtered = normalized.filter((result, index) => {
+		const hasName = result.name && result.name.trim() !== "";
+		const hasDate = result.dob && result.dob.trim() !== "";
+		const shouldKeep = hasName || hasDate;
 
-		// Keep entries that have at least a valid name or valid DOB
-		return hasValidName || hasValidDOB;
+		console.log(`Filter ${index}:`, {
+			result,
+			hasName,
+			hasDate,
+			shouldKeep,
+		});
+
+		return shouldKeep;
 	});
 
 	console.log(
-		"✅ OCR normalization complete:",
+		"✅ SIMPLIFIED normalization complete:",
 		filtered.length,
 		"valid results"
 	);
+	console.log("Final filtered results:", filtered);
 	return filtered;
 }
 
-// Export utility functions for individual use
+// Export utility functions for testing
 export { isValidName, isValidDate, combineStackedEntries };

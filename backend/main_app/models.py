@@ -4,6 +4,7 @@ from typing import Optional, List
 class OCRResult(BaseModel):
     name: str
     dob: Optional[str] = None
+    score: Optional[float] = None
 
 class Patient(BaseModel):
     name: str
@@ -15,4 +16,4 @@ class Patient(BaseModel):
     box_number: str
 
 class OCRResponse(BaseModel):
-    ocr1: List[OCRResult]
+    paddleOCR: List[OCRResult]

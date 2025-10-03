@@ -100,21 +100,20 @@ async def run_paddleocr(
         # Attempt OCR
         logger.info("Starting OCR detection")
         result = ocr.ocr(enhanced)
-        all_results = [result[0]] if result and isinstance(result, list) and result[0] else []
         
         logger.info(f"Raw OCR result: {result}")
         
-        logger.info(f"Raw OCR result: {all_results}")
-        
-        # Process results from all regions
+        # Process results from PaddleOCR
+        # PaddleOCR returns: [{'rec_texts': [...], 'rec_scores': [...], ...}]
         text_results = []
         
-        for page_result in all_results:
+        if result and result[0]:
+            page_result = result[0]
             if isinstance(page_result, dict) and 'rec_texts' in page_result and 'rec_scores' in page_result:
                 texts = page_result['rec_texts']
                 scores = page_result['rec_scores']
                 
-                logger.info(f"Found {len(texts)} text segments in region")
+                logger.info(f"Found {len(texts)} text segments in OCR result")
                 
                 # First pass: classify all texts
                 classified_results = []
@@ -132,11 +131,11 @@ async def run_paddleocr(
                             continue
                             
                         text = ' '.join(text.split())  # Normalize whitespace
-                        result = classify_text(text)
-                        if result:
-                            result['score'] = score  # Store confidence score
-                            classified_results.append(result)
-                            logger.info(f"Detected text: {result} (confidence: {score:.2f})")
+                        classification_result = classify_text(text)
+                        if classification_result:
+                            classification_result['score'] = score  # Store confidence score
+                            classified_results.append(classification_result)
+                            logger.info(f"Detected text: {classification_result} (confidence: {score:.2f})")
                             
                     except Exception as e:
                         logger.error(f"Error processing text '{text}': {str(e)}")
@@ -154,8 +153,9 @@ async def run_paddleocr(
                         current.get('name') and not current.get('dob') and  # Current has name but no DOB
                         not next_result.get('name') and next_result.get('dob')):  # Next has DOB but no name
                         
-                        # Combine them
+                        # Combine them, preserving the higher score
                         current['dob'] = next_result['dob']
+                        current['score'] = max(current.get('score', 0), next_result.get('score', 0))
                         combined_results.append(current)
                         i += 2  # Skip the DOB entry we just used
                         logger.info(f"Combined stacked entries: {current}")
@@ -164,6 +164,8 @@ async def run_paddleocr(
                         i += 1
                 
                 text_results.extend(combined_results)
+            else:
+                logger.warning(f"Unexpected PaddleOCR result format: {type(page_result)}")
         
         logger.info(f"Final results: {text_results}")
         return text_results
