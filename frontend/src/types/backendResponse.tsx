@@ -3,9 +3,6 @@ export interface OCRResult {
 	name: string;
 	dob: string | null;
 	score?: number; // Confidence score from OCR is optional
-	isPotentialDuplicate?: boolean;
-	duplicateGroupId?: string;
-	isResolved?: boolean; // Whether this duplicate has been resolved
 	imageSource?: string; // Which image this result came from
 	matchedPatientIndex?: number; // Index of the patient this result was matched to
 }
@@ -26,9 +23,3 @@ export interface BackendResponse {
 
 // Separate type for box response since it's a different endpoint
 export type BoxResponse = Patient[];
-
-export interface OCRGroup {
-	id: string;
-	results: OCRResult[];
-	isResolved: boolean;
-}

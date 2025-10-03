@@ -1,226 +1,163 @@
-/* ===================================================================
-   DIGITAL-TO-PHYSICAL-OCR FRONTEND STYLES
-   This file contains all the styling for the main application layout,
-   components, and UI elements.
-   =================================================================== */
-
-/* === ROOT VARIABLES & BASE STYLES === */
-:root {
-	/* Base font and color settings for the entire application */
-	font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-	line-height: 1.5;
-	font-weight: 500;
-	color: rgba(255, 255, 255, 0.95);
-	background-color: #1e1e1e;
-}
-
-body {
-	/* Base body styling with dark theme */
+/* CSS Reset and Base Styles Start */
+* {
 	margin: 0;
-	min-width: 320px;
-	min-height: 100vh;
-	background: #1e1e1e;
-}
-
-/* === MAIN APPLICATION LAYOUT === */
-.main-container {
-	/* Root container for the entire app - uses flexbox for layout */
-	min-height: 100vh;
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	background: #1e1e1e;
-	min-width: min-content;
-}
-
-.outputs-area {
-	/* Main content area that contains the tables and image preview */
-	flex: 1;
-	display: flex;
-	justify-content: flex-start;
-	padding: 20px 20px 100px 20px; /* Extra bottom padding for fixed control panel */
-	overflow-x: auto;
-	width: 100%;
-}
-
-/* === DATA DISPLAY CONTAINERS === */
-.outputs-container {
-	/* Container for all data display elements (tables + image preview) */
-	display: flex;
-	gap: 20px;
-	min-width: min-content;
-	width: fit-content;
-	align-items: flex-start;
-}
-
-.main-table-container,
-.side-table-container {
-	/* Styling for both table containers - Box Records and OCR Results */
-	background: #232323;
-	border-radius: 10px;
-	padding: 20px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-	overflow: visible;
-	width: fit-content;
-	margin-top: 0;
-}
-
-.main-table-container {
-	/* Specific sizing for the Box Records table container */
-	min-width: 1000px;
-}
-
-.side-table-container {
-	/* Specific sizing for the OCR Results table container */
-	min-width: 600px;
-}
-
-.main-table-container h3,
-.side-table-container h3 {
-	/* Table headers styling */
-	margin-top: 0;
-	margin-bottom: 15px;
-	color: #fff;
-	font-weight: 600;
-}
-
-/* === ROW STATE CLASSES === */
-/* These classes are applied to DataGrid rows based on fuzzy matching results */
-.row-no-match {
-	/* Red background for rows with no matching OCR data */
-	background: rgba(255, 76, 76, 0.3) !important;
-	color: #ffffff !important;
-}
-
-.row-match {
-	/* Green background for rows with strong OCR matches */
-	background: rgba(76, 175, 80, 0.1) !important;
-}
-
-.row-partial-match {
-	/* Blue background for rows with partial OCR matches */
-	background: rgba(33, 150, 243, 0.1) !important;
-}
-
-/* === IMAGE PREVIEW === */
-.image-preview-container {
-	/* Container for the uploaded image preview */
-	background: #232323;
-	border-radius: 10px;
-	padding: 20px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-	width: 25%;
-	min-width: 300px;
-	height: fit-content;
-}
-
-.image-preview {
-	/* The actual image element styling */
-	width: 100%;
-	height: auto;
-	border-radius: 4px;
-	margin-top: 10px;
-	object-fit: contain;
-	max-height: calc(100vh - 200px);
-}
-
-.image-preview-container h3 {
-	/* Image preview header */
-	margin-top: 0;
-	margin-bottom: 15px;
-	color: #fff;
-	font-weight: 600;
-}
-
-/* === CONTROL PANEL (BOTTOM BAR) === */
-.control-panel-bottom {
-	/* Fixed bottom control panel with all the action buttons */
-	position: fixed;
-	left: 0;
-	bottom: 0;
-	width: 100%;
-	background: #181818;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 24px;
-	padding: 12px 32px;
-	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.5);
-	z-index: 100;
+	padding: 0;
 	box-sizing: border-box;
 }
 
+html,
+body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+		"Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+		sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	background-color: #1a1a1a;
+	color: #ffffff;
+}
+
+#root {
+	height: 100vh;
+	padding: 8px;
+}
+
+/* Main Container */
+.main-container {
+	height: 100%;
+	background-color: #2d2d2d;
+	border-radius: 8px;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+/* Outputs Area */
+.outputs-container {
+	flex: 1;
+	overflow: hidden;
+}
+/* CSS Reset and Base Styles End */
+
+/* Control Panel Styling Start*/
+.control-panel-main {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px;
+	background-color: #383838;
+	border-top: 1px solid #4a4a4a;
+	position: relative;
+}
+
+.control-panel-center {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 1;
+	justify-content: center;
+}
+
+.control-panel-button {
+	padding: 8px 16px;
+	border: 1px solid #555;
+	border-radius: 6px;
+	background-color: #4a4a4a;
+	color: #ffffff;
+	cursor: pointer;
+	font-size: 14px;
+	transition: all 0.2s ease;
+	white-space: nowrap;
+}
+
+.control-panel-button:hover {
+	background-color: #555;
+	border-color: #666;
+}
+
+.control-panel-button:disabled {
+	background-color: #333;
+	color: #888;
+	cursor: not-allowed;
+	border-color: #444;
+}
+
+.control-panel-button.primary {
+	background-color: #0066cc;
+	border-color: #0077dd;
+}
+
+.control-panel-button.primary:hover {
+	background-color: #0077dd;
+	border-color: #0088ee;
+}
+
+.control-panel-button.secondary {
+	background-color: #666;
+	border-color: #777;
+}
+
+.control-panel-button.secondary:hover {
+	background-color: #777;
+	border-color: #888;
+}
+
+.text-input {
+	padding: 8px 12px;
+	border: 1px solid #555;
+	border-radius: 6px;
+	background-color: #4a4a4a;
+	color: #ffffff;
+	font-size: 14px;
+	min-width: 200px;
+}
+
+.text-input:focus {
+	outline: none;
+	border-color: #0066cc;
+	box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+}
+
+.text-input:disabled {
+	background-color: #333;
+	color: #888;
+	border-color: #444;
+}
+
+.image-popup-button {
+	padding: 8px 16px;
+	border: 1px solid #555;
+	border-radius: 6px;
+	background-color: #4a4a4a;
+	color: #ffffff;
+	cursor: pointer;
+	font-size: 14px;
+	transition: all 0.2s ease;
+	white-space: nowrap;
+	margin-left: auto;
+}
+
+.image-popup-button:hover {
+	background-color: #555;
+	border-color: #666;
+}
+
+.image-popup-button:disabled {
+	background-color: #333;
+	color: #888;
+	cursor: not-allowed;
+	border-color: #444;
+}
+
 .divider {
-	/* Visual separator between button groups */
 	width: 1px;
 	height: 24px;
-	background: #444;
-	margin: 0 8px;
-}
-
-/* === FORM INPUTS === */
-.box-input {
-	/* Text input for box number entry */
-	padding: 10px 16px;
-	border-radius: 6px;
-	border: 1px solid #444;
-	font-size: 1rem;
-	background: #232323;
-	color: #fff;
-	width: 140px;
-	outline: none;
-	transition: border-color 0.2s ease-in-out;
-	margin: 0;
-	line-height: normal;
-}
-
-.box-input:focus {
-	/* Focus state for box input */
-	border-color: #4caf50;
-}
-
-/* === BUTTONS === */
-.button {
-	/* Base button styling used for all control panel buttons */
-	background-color: #4caf50;
-	border: none;
-	color: white;
-	padding: 10px 20px;
-	height: 40px;
-	font-size: 0.9rem;
-	border-radius: 6px;
-	cursor: pointer;
-	font-weight: 600;
-	transition: all 0.2s ease-in-out;
-	min-width: 120px;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	white-space: nowrap;
-	margin: 0;
-}
-
-.button:hover {
-	/* Button hover state */
-	background-color: #43a047;
-	transform: translateY(-1px);
-}
-
-.button:disabled {
-	/* Disabled button state */
-	background-color: #333;
-	color: #666;
-	cursor: not-allowed;
-	transform: none;
-}
-
-.button.secondary {
-	/* Secondary button variant (Undo, Undo All) */
 	background-color: #555;
-	margin: 0 8px;
+	margin: 0 4px;
 }
-
-.button.secondary:hover {
-	/* Secondary button hover state */
-	background-color: #666;
-}
+/* Control Panel Styling End*/

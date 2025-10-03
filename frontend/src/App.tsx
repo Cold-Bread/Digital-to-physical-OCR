@@ -7,16 +7,9 @@ function App() {
 	const patientList = useOCRStore((s) => s.patientList);
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-	console.log("App Render State:", {
-		patientListLength: patientList.length,
-		selectedFile: selectedFile?.name,
-	});
-
 	return (
 		<div className="main-container">
-			<div className="outputs-area">
-				<OCROutputs boxData={patientList} selectedFile={selectedFile} />
-			</div>
+			<OCROutputs boxData={patientList} selectedFile={selectedFile} />
 			<ControlPanel
 				onFileSelect={setSelectedFile}
 				selectedFile={selectedFile}
