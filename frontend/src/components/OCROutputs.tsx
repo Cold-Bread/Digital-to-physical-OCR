@@ -3,7 +3,7 @@ import { useOCRStore } from "../store/useOCRStore";
 import { useMemo } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Fuse from "fuse.js";
-import "./DataGrid.css"; // Import MUI DataGrid styling
+import "./DataGrid.css";
 
 interface OCROutputsProps {
 	boxData: Patient[];
@@ -29,87 +29,80 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 		console.log("=====================");
 	}
 
-	// Fuzzy matching setup
-	const fuseOptions = {
-		keys: ["name", "dob"],
-		threshold: 0.3, // adjust for strictness
-		includeScore: true,
-	};
-	const fuse = new Fuse(boxData, fuseOptions);
-
 	const ocrData = useMemo(() => {
 		return allOCRResults;
 	}, [allOCRResults]);
 
 	// DataGrid columns for Patient (read-only)
 	const boxColumns: GridColDef[] = [
-		{ field: "name", headerName: "Name", flex: 1 },
-		{ field: "dob", headerName: "DOB", flex: 1 },
+		{
+			field: "name",
+			headerName: "Name",
+			flex: 1,
+			minWidth: 200,
+			maxWidth: 250,
+		},
+		{ field: "dob", headerName: "DOB", flex: 1, minWidth: 100, maxWidth: 150 },
 		{
 			field: "year_joined",
 			headerName: "Year Joined",
 			flex: 1,
+			minWidth: 120,
+			maxWidth: 150,
 			type: "number",
+			valueFormatter: (value: number) => value?.toString() || "",
 		},
-		{ field: "last_dos", headerName: "Last DOS", flex: 1, type: "number" },
-		{ field: "shred_year", headerName: "Shred Year", flex: 1, type: "number" },
+		{
+			field: "last_dos",
+			headerName: "Last DOS",
+			flex: 1,
+			minWidth: 120,
+			maxWidth: 150,
+			type: "number",
+			valueFormatter: (value: number) => value?.toString() || "",
+		},
+		{
+			field: "shred_year",
+			headerName: "Shred Year",
+			flex: 1,
+			minWidth: 120,
+			maxWidth: 150,
+			type: "number",
+			valueFormatter: (value: number) => value?.toString() || "",
+		},
 		{
 			field: "is_child_when_joined",
 			headerName: "Child When Joined",
 			flex: 1,
+			minWidth: 160,
+			maxWidth: 180,
 			type: "boolean",
-			valueFormatter: (value: boolean) => (value ? "Yes" : "No"),
 		},
-		{ field: "box_number", headerName: "Box Number", flex: 1 },
+		{ field: "box_number", headerName: "Box Number", flex: 1, minWidth: 120 },
 	];
+
 	const boxRows = boxData.map((row, idx) => ({ ...row, id: idx }));
 
 	// DataGrid columns for OCR (editable)
 	const ocrColumns: GridColDef[] = [
-		{ field: "name", headerName: "Name", flex: 1, editable: true },
-		{ field: "dob", headerName: "DOB", flex: 1, editable: true },
+		{
+			field: "name",
+			headerName: "Name",
+			flex: 1,
+			maxWidth: 250,
+			editable: true,
+		},
+		{ field: "dob", headerName: "DOB", flex: 1, maxWidth: 150, editable: true },
 		{
 			field: "score",
 			headerName: "Confidence",
 			flex: 1,
+			maxWidth: 150,
 			valueFormatter: (value: number) =>
 				value ? `${(value * 100).toFixed(1)}%` : "N/A",
 		},
 	];
 	const ocrRows = ocrData.map((row, idx) => ({ ...row, id: idx }));
-
-	// Debug logging for DataGrid rows (only when we have results)
-	if (ocrRows.length > 0) {
-		console.log("OCR Rows for DataGrid:", ocrRows);
-		console.log(
-			"OCR Rows sample score values:",
-			ocrRows.map((r) => ({
-				name: r.name,
-				score: r.score,
-				scoreType: typeof r.score,
-			}))
-		);
-	}
-
-	// Fuzzy match status for each box row
-	const getBoxRowClass = (patient: Patient) => {
-		if (!patient || !patient.name) return "row-no-match";
-		// Find best fuzzy match from OCR results
-		let bestScore = 1;
-		let bestType: "match" | "partial" | "none" = "none";
-		for (const ocr of ocrData) {
-			const results = fuse.search({ name: ocr.name ?? "", dob: ocr.dob ?? "" });
-			if (results.length > 0) {
-				const score = results[0].score ?? 1;
-				if (score < 0.15) return "row-match"; // strong match
-				if (score < bestScore) {
-					bestScore = score;
-					bestType = "partial";
-				}
-			}
-		}
-		return bestType === "partial" ? "row-partial-match" : "row-no-match";
-	};
 
 	// Handle OCR cell edits - the proper way with processRowUpdate
 	const handleProcessRowUpdate = (newRow: any, oldRow: any) => {
@@ -132,9 +125,50 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 		return newRow; // Return the new row to confirm the update
 	};
 
+	// Debug logging for DataGrid rows (only when we have results)
+	if (ocrRows.length > 0) {
+		console.log("OCR Rows for DataGrid:", ocrRows);
+		console.log(
+			"OCR Rows sample score values:",
+			ocrRows.map((r) => ({
+				name: r.name,
+				score: r.score,
+				scoreType: typeof r.score,
+			}))
+		);
+	}
+
+	// Fuzzy matching setup
+	const fuseOptions = {
+		keys: ["name", "dob"],
+		threshold: 0.3, // adjust for strictness
+		includeScore: true,
+	};
+	const fuse = new Fuse(boxData, fuseOptions);
+
+	// Fuzzy match status for each box row
+	const getBoxRowClass = (patient: Patient) => {
+		if (!patient || !patient.name) return "row-no-match";
+		// Find best fuzzy match from OCR results
+		let bestScore = 1;
+		let bestType: "match" | "partial" | "none" = "none";
+		for (const ocr of ocrData) {
+			const results = fuse.search({ name: ocr.name ?? "", dob: ocr.dob ?? "" });
+			if (results.length > 0) {
+				const score = results[0].score ?? 1;
+				if (score < 0.15) return "row-match"; // strong match
+				if (score < bestScore) {
+					bestScore = score;
+					bestType = "partial";
+				}
+			}
+		}
+		return bestType === "partial" ? "row-partial-match" : "row-no-match";
+	};
+
 	return (
-		<div className="outputs-container">
-			<div className="main-table-container">
+		<div className="outputs-container-main">
+			<div className="box-table-container">
 				<h3>Box Records</h3>
 				<div className="table-content">
 					<DataGrid
@@ -143,11 +177,15 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 						hideFooter
 						disableRowSelectionOnClick
 						getRowClassName={(params) => getBoxRowClass(params.row)}
+						rowHeight={40}
+						disableColumnResize={false}
+						autoHeight={false}
+						disableColumnMenu
 					/>
 				</div>
 			</div>
 
-			<div className="side-table-container">
+			<div className="ocr-table-container">
 				<h3>OCR Results</h3>
 				<div className="table-content">
 					<DataGrid
@@ -159,6 +197,7 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 						onProcessRowUpdateError={(error) =>
 							console.error("Row update error:", error)
 						}
+						rowHeight={40}
 					/>
 				</div>
 			</div>
