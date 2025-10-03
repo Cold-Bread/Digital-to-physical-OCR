@@ -9,9 +9,7 @@ function App() {
 
 	return (
 		<div className="main-container">
-			<div className="outputs-area">
-				<OCROutputs boxData={patientList} selectedFile={selectedFile} />
-			</div>
+			<OCROutputs boxData={patientList} selectedFile={selectedFile} />
 			<ControlPanel
 				onFileSelect={setSelectedFile}
 				selectedFile={selectedFile}

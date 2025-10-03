@@ -1,4 +1,5 @@
-frontend changes: ~~markthrough means completed~~
+frontend changes:
+
 pagnation:
 
 - change row selector to Fill (show rows to bottom of screen, no scroll) or All (show all results, scroll is fine)
@@ -15,39 +16,13 @@ table changes:
 Control Panel:
 
 - new button layout should be as follows:
-  boxNum text input, getBox button, image input button, send image, divider, undo, undo all, divider, submit to sheet, view image (hugs right wall)
+  boxNum text input, getBox button, image input button, send image, vertical divider, undo, undo all, vertical divider, submit to sheet, view image (hugs right wall)
 
 Normailization:
 
 - add chronos and other lightweight library for easier and better data handling
 
 Bugs:
-
-- last row gets cut off (bug, adding padding-bottom)
-- ensure rows from tables are inline with eachother for ease of mapping
-- ~~ investigate send image button invokes Error: Cannot read properties of undefined (reading 'map')~~
-
-Component Details:
-
-- The code selection given is only a reference of the variables and paths needed. The goals is to move the image display to instead be a pop up window originating from a button.
-
-  Description:
-
-  - Window availble via "View Picture" button, temporary location is the far right of the controlPanel compenent
-  - should display picture with similar background style as current UI
-  - pop up should first appear hugging the right wall and displaying the full image. Follow project css (unsure if global padding)
-  - On click, change the color and disable the view picture button.
-  - When pop up is closed, change the view picture button color back and re-enable it
-
-  Additonal pop up features:
-
-  - click and drag icon in top left (allows pop up to be moved around, window is pinned in place otherwise)
-  - Window resizing (image should not be resized along with the window, simply cut off. User sohuld be able to scroll around image if need be)
-  - resize window to fit image button (Main usage is to reset the view after user resizes the window and potentially cuts off the image)
-
-  Notes:
-
-  - while the "View Picture" button exists within controlPanel.tsx, the onClick event should route to a seperate .tsx file whose purpose is the description of the new window
 
 ---
 

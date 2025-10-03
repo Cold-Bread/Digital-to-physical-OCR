@@ -217,76 +217,75 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 	console.log("✅ Fully normalized results:", normalized);
 
 	return (
-		<div
-			className="control-panel control-panel-bottom"
-			style={{ position: "relative" }}
-		>
-			<input
-				type="text"
-				className="box-input"
-				placeholder="Enter Box Number (e.g., TCBOX77)"
-				value={boxNumber}
-				onChange={(e) => setBoxNumber(e.target.value.toUpperCase())}
-				disabled={isLoading}
-			/>
-			<input
-				type="file"
-				accept="image/*"
-				ref={fileInputRef}
-				style={{ display: "none" }}
-				onChange={handleFileChange}
-				disabled={isLoading}
-			/>
+		<div className="control-panel-main">
+			<div className="control-panel-center">
+				<input
+					type="text"
+					className="text-input"
+					placeholder="Enter Box Number (e.g., TCBOX77)"
+					value={boxNumber}
+					onChange={(e) => setBoxNumber(e.target.value.toUpperCase())}
+					disabled={isLoading}
+				/>
+				<button
+					className="control-panel-button"
+					onClick={handleGetBox}
+					disabled={!boxNumber || isLoading}
+				>
+					{isLoading ? "Loading..." : "Get Box"}
+				</button>
+				<input
+					type="file"
+					accept="image/*"
+					ref={fileInputRef}
+					style={{ display: "none" }}
+					onChange={handleFileChange}
+					disabled={isLoading}
+				/>
+				<button
+					className="control-panel-button"
+					onClick={() => fileInputRef.current?.click()}
+					disabled={isLoading}
+				>
+					{selectedFile ? selectedFile.name : "Choose Image"}
+				</button>
+				<button
+					className="control-panel-button"
+					onClick={handleProcessImage}
+					disabled={!selectedFile || isLoading}
+				>
+					{isLoading ? "Processing..." : "Send Image"}
+				</button>
+				<div className="divider"></div>
+				<button
+					className="control-panel-button secondary"
+					onClick={undo}
+					disabled={isLoading || history.length <= 1}
+				>
+					Undo
+				</button>
+				<button
+					className="control-panel-button secondary"
+					onClick={undoAll}
+					disabled={isLoading || history.length <= 1}
+				>
+					Undo All
+				</button>
+				<div className="divider"></div>
+				<button
+					className="control-panel-button primary"
+					onClick={handleSaveToSheet}
+					disabled={isLoading || patientList.length === 0}
+				>
+					Save to Sheet
+				</button>
+			</div>
 			<button
-				className="button"
-				onClick={() => fileInputRef.current?.click()}
-				disabled={isLoading}
-			>
-				{selectedFile ? selectedFile.name : "Choose Image"}
-			</button>
-			<button
-				className="button"
-				onClick={handleGetBox}
-				disabled={!boxNumber || isLoading}
-			>
-				{isLoading ? "Loading..." : "Get Box"}
-			</button>
-			<button
-				className="button"
-				onClick={handleProcessImage}
-				disabled={!selectedFile || isLoading}
-			>
-				{isLoading ? "Processing..." : "Send Image"}
-			</button>
-			<button
-				className="button"
+				className="image-popup-button"
 				onClick={() => setImagePopupOpen(true)}
 				disabled={!selectedFile || isLoading}
 			>
 				View Image
-			</button>
-			<div className="divider"></div>
-			<button
-				className="button secondary"
-				onClick={undo}
-				disabled={isLoading || history.length <= 1}
-			>
-				Undo
-			</button>
-			<button
-				className="button secondary"
-				onClick={undoAll}
-				disabled={isLoading || history.length <= 1}
-			>
-				Undo All
-			</button>
-			<div className="divider"></div>
-			<button
-				className="button primary"
-				onClick={handleSaveToSheet}
-				disabled={isLoading || patientList.length === 0}
-			>
-				Save to Sheet
 			</button>
 			<ImagePopup
 				file={selectedFile}
