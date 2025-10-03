@@ -13,16 +13,18 @@ from datetime import datetime
 import argparse
 from typing import Optional
 
-# Add parent directory to path to import paddleocr
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add parent directories to path for imports
+current_dir = Path(__file__).parent
+model_training_dir = current_dir.parent
+sys.path.insert(0, str(model_training_dir))
+sys.path.insert(0, str(model_training_dir.parent))  # ocr_paddle_service
+sys.path.insert(0, str(model_training_dir.parent.parent))  # backend
 
 try:
     from paddleocr import PaddleOCR
 except ImportError:
     print("PaddleOCR not installed. Please install with: pip install paddleocr")
     sys.exit(1)
-
-from typing import Optional
 
 def evaluate_current_model(test_images_dir: str, output_file: str = "evaluation_results.json", max_images: Optional[int] = None):
     """
@@ -98,59 +100,35 @@ def evaluate_current_model(test_images_dir: str, output_file: str = "evaluation_
                 results['summary']['failed_predictions'] += 1
                 continue
             
-            # Run OCR
+            # Run OCR using predict() method for proper format
             ocr_result = ocr.predict(image)
             
-            # Debug: Print the structure of the first result to understand the format
-            if i == 1:  # Only print for the first image to avoid spam
-                print(f"  Debug - OCR result type: {type(ocr_result)}")
-                print(f"  Debug - OCR result structure: {ocr_result}")
-                if hasattr(ocr_result, 'prediction'):
-                    print(f"  Debug - Has prediction attribute: {type(ocr_result.prediction)}")
-                
-            # Process results
+            # Process results - predict() returns list containing OCRResult objects
             detected_text = []
             
-            # Handle the new predict() method result format
-            if ocr_result and hasattr(ocr_result, 'prediction') and ocr_result.prediction:
-                # New format: result.prediction contains the OCR data
-                ocr_data = ocr_result.prediction
-            elif ocr_result and isinstance(ocr_result, list) and len(ocr_result) > 0:
-                # Fallback: treat as list format
-                ocr_data = ocr_result[0] if ocr_result[0] else []
-            else:
-                ocr_data = []
-            
-            if ocr_data:
-                for line in ocr_data:
-                    try:
-                        if len(line) >= 2:
-                            bbox = line[0]  # Bounding box coordinates
-                            text_info = line[1]  # (text, confidence)
-                            
-                            # Handle different OCR result formats
-                            if isinstance(text_info, (list, tuple)) and len(text_info) >= 2:
-                                text = text_info[0] if text_info[0] else ""
-                                confidence = text_info[1] if text_info[1] is not None else 0.0
-                            else:
-                                # Fallback if format is unexpected
-                                text = str(text_info) if text_info else ""
-                                confidence = 0.0
-                            
+            # Check if ocr_result is a list with at least one element
+            if ocr_result and isinstance(ocr_result, list) and len(ocr_result) > 0:
+                # Extract the first OCRResult object from the result
+                result_obj = ocr_result[0]
+                
+                # OCRResult objects behave like dictionaries - use dictionary-style access
+                if 'rec_texts' in result_obj and 'rec_scores' in result_obj:
+                    rec_texts = result_obj['rec_texts']
+                    rec_scores = result_obj['rec_scores']
+                    
+                    # Ensure both lists have the same length
+                    if isinstance(rec_texts, list) and isinstance(rec_scores, list) and len(rec_texts) == len(rec_scores):
+                        for text, confidence in zip(rec_texts, rec_scores):
                             # Only add if we have actual text
-                            if text and len(text.strip()) > 0:
+                            if text and len(str(text).strip()) > 0:
                                 detected_text.append({
-                                    'text': text,
+                                    'text': str(text),
                                     'confidence': float(confidence),
-                                    'bbox': bbox
+                                    'bbox': None  # predict() doesn't provide bbox info
                                 })
                                 
-                                all_confidences.append(confidence)
+                                all_confidences.append(float(confidence))
                                 results['summary']['total_text_segments'] += 1
-                    except (IndexError, TypeError, ValueError) as e:
-                        print(f"    Warning: Error processing OCR line: {e}")
-                        print(f"    Line structure: {line}")
-                        continue
             
             # Store result
             image_result = {
@@ -233,25 +211,38 @@ def main():
     
     args = parser.parse_args()
     
-    if not os.path.exists(args.test_dir):
-        print(f"Error: Test directory {args.test_dir} does not exist")
+    # Convert relative paths to absolute paths
+    current_dir = Path(__file__).parent
+    model_training_dir = current_dir.parent
+    
+    test_dir = args.test_dir
+    if not os.path.isabs(test_dir):
+        test_dir = str(model_training_dir / test_dir)
+    
+    if not os.path.exists(test_dir):
+        print(f"Error: Test directory {test_dir} does not exist")
         return
     
+    # Handle output file path
+    output_file = args.output
+    if not os.path.isabs(output_file):
+        output_file = str(model_training_dir / output_file)
+    
     print("Starting evaluation of current PaddleOCR model...")
-    print(f"Test directory: {args.test_dir}")
-    print(f"Output file: {args.output}")
+    print(f"Test directory: {test_dir}")
+    print(f"Output file: {output_file}")
     if args.max_images:
         print(f"Max images to process: {args.max_images}")
     print()
     
-    results = evaluate_current_model(args.test_dir, args.output, args.max_images)
+    results = evaluate_current_model(test_dir, output_file, args.max_images)
     
     print("\nEvaluation complete!")
     print("Next steps:")
     print("1. Review the results in the JSON file")
     print("2. If performance is poor, proceed with custom training")
-    print("3. Use dataset_converter.py to prepare your training data")
-    print("4. Follow the training_instructions.md guide")
+    print("3. Use create_evaluation_dataset.py to prepare your training data")
+    print("4. Use train_custom_model.py to train your custom model")
 
 if __name__ == "__main__":
     main()

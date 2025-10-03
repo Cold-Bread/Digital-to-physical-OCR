@@ -1,110 +1,257 @@
 ================================================================================
                            MODEL TRAINING SCRIPTS COMMANDS
+              Following Official PaddleOCR Secondary Development Workflow
 ================================================================================
+
+IMPORTANT: All commands should be run from the model_training directory:
+cd "c:\Users\Jacob\Personal Projects\Digital-to-physical-OCR\backend\ocr_paddle_service\model_training"
+
+================================================================================
+                      OFFICIAL PADDLEOCR TRAINING WORKFLOW
+================================================================================
+
+The updated train_custom_model.py now follows the official PaddleOCR secondary development
+workflow as documented at:
+https://www.paddleocr.ai/main/en/version3.x/module_usage/text_recognition.html#4-secondary-development
+
+TRAINING WORKFLOW COMMANDS:
+
+1. SETUP TRAINING ENVIRONMENT
+   Purpose: Clone PaddleOCR repository and install dependencies
+   
+   python train_custom_model.py --action setup
+
+2. SPECIFY PRE-TRAINED MODEL PATH
+   Purpose: Use your own pre-trained model or download one manually
+   Note: You need to obtain a PP-OCRv5_server_rec pre-trained model file (.pdparams)
+   
+   Default path (if not specified): pretrained_models/PP-OCRv5_server_rec_pretrained.pdparams
+   
+   To download manually:
+   wget https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/PP-OCRv5_server_rec_pretrained.pdparams
+
+3. ANALYZE CURRENT EVALUATION RESULTS
+   Purpose: Analyze existing evaluation results to determine training priorities
+   
+   python train_custom_model.py --action analyze
+
+4. PREPARE TRAINING DATA
+   Purpose: Prepare data in official PaddleOCR format for training
+   
+   python train_custom_model.py --action prepare --dataset_format paddleocr
+
+5. CREATE TRAINING CONFIGURATION
+   Purpose: Create training plan and configuration files
+   
+   python train_custom_model.py --action config
+
+6. EXECUTE TRAINING
+   Purpose: Train the custom model using PaddleOCR's official training tools
+   
+   # Using default pre-trained model path
+   python train_custom_model.py --action train
+   
+   # Using custom pre-trained model path
+   python train_custom_model.py --action train --pretrained_model_path "path/to/your/pretrained_model.pdparams"
+
+7. EVALUATE TRAINED MODEL
+   Purpose: Evaluate the trained model performance
+   
+   python train_custom_model.py --action evaluate --model_path "training_output/rec_models/best_accuracy.pdparams"
+
+8. EXPORT MODEL FOR INFERENCE
+   Purpose: Export the trained model for integration into PaddleOCR API
+   
+   python train_custom_model.py --action export --model_path "training_output/rec_models/best_accuracy.pdparams"
+
+================================================================================
+                              COMPLETE TRAINING WORKFLOW
+================================================================================
+
+For a complete training workflow, run these commands in order:
+
+# Step 1: Set up the PaddleOCR training environment
+python train_custom_model.py --action setup
+
+# Step 2: Download pre-trained model manually (or use your own)
+# wget https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/PP-OCRv5_server_rec_pretrained.pdparams
+# Or place your .pdparams file in the desired location
+
+# Step 3: Analyze your current evaluation results
+python train_custom_model.py --action analyze
+
+# Step 4: Prepare your data in PaddleOCR format
+python train_custom_model.py --action prepare --dataset_format paddleocr
+
+# Step 5: Create training configuration and plan
+python train_custom_model.py --action config
+
+# Step 6: Execute the training (this takes several hours)
+python train_custom_model.py --action train --pretrained_model_path "path/to/pretrained_model.pdparams"
+
+# Step 7: Evaluate the trained model
+python train_custom_model.py --action evaluate --model_path "training_output/rec_models/best_accuracy.pdparams"
+
+# Step 8: Export the model for use in your application
+python train_custom_model.py --action export --model_path "training_output/rec_models/best_accuracy.pdparams"
+
+================================================================================
+                           EVALUATION SCRIPTS
+================================================================================
+
+These evaluation scripts are still available for analysis and testing:
 
 1. ANALYZE_DATASET.PY
    Purpose: Analyze ground truth dataset characteristics
    
    Basic usage with label file:
-   python analyze_dataset.py --label_file "converted_test_dataset\val_label.txt"
+   python OCR_Evaluation/analyze_dataset.py --label_file "test_dataset/val_label.txt"
    
    With images directory for comprehensive analysis:
-   python analyze_dataset.py --label_file "converted_test_dataset\val_label.txt" \
-                            --images_dir "converted_test_dataset\val_images"
-
---------------------------------------------------------------------------------
+   python OCR_Evaluation/analyze_dataset.py --label_file "test_dataset/val_label.txt" --images_dir "test_dataset/val_images"
 
 2. CREATE_EVALUATION_DATASET.PY
    Purpose: Create evaluation dataset from CSV
    
    Basic usage:
-   python create_evaluation_dataset.py --csv_file "path\to\your\data.csv" \
-                                      --images_dir "path\to\images" \
-                                      --output_dir "evaluation_dataset"
-   
-   With maximum samples limit:
-   python create_evaluation_dataset.py --csv_file "path\to\your\data.csv" \
-                                      --images_dir "path\to\images" \
-                                      --output_dir "evaluation_dataset" \
-                                      --max_samples 100
-
---------------------------------------------------------------------------------
+   python create_evaluation_dataset.py --csv_file "path\to\your\data.csv" --images_dir "path\to\images" --output_dir "evaluation_dataset"
 
 3. EVALUATE_BASELINE.PY
    Purpose: Quick baseline model evaluation
    
    Basic usage:
-   python evaluate_baseline.py --test_dir "converted_test_dataset\val_images"
-   
-   With custom output file:
-   python evaluate_baseline.py --test_dir "converted_test_dataset\val_images" \
-                               --output "baseline_results.json"
-   
-   Limit number of images processed:
-   python evaluate_baseline.py --test_dir "converted_test_dataset\val_images" \
-                               --max_images 50
-
---------------------------------------------------------------------------------
+   python OCR_Evaluation/evaluate_baseline.py --test_dir "test_dataset/val_images"
 
 4. EVALUATE_WITH_GROUND_TRUTH.PY
    Purpose: Comprehensive evaluation with accuracy metrics
    
-   Basic usage (looks for val_label.txt in dataset directory):
-   python evaluate_with_ground_truth.py --dataset_dir "converted_test_dataset"
+   Basic usage with DEFAULT PaddleOCR model:
+   python OCR_Evaluation/evaluate_with_ground_truth.py --dataset_dir "test_dataset" --max_images 5000
    
-   With specific label file:
-   python evaluate_with_ground_truth.py --dataset_dir "converted_test_dataset" \
-                                        --label_file "converted_test_dataset\val_label.txt"
+   Usage with CUSTOM TRAINED model:
+   python OCR_Evaluation/evaluate_with_ground_truth.py --dataset_dir "test_dataset" --use_custom_model --max_images 5000 --output "custom_model_eval.json"
    
-   With custom output and image limit:
-   python evaluate_with_ground_truth.py --dataset_dir "converted_test_dataset" \
-                                        --output "ground_truth_results.json" \
-                                        --max_images 100
+   Usage with custom model path:
+   python OCR_Evaluation/evaluate_with_ground_truth.py --dataset_dir "test_dataset" --use_custom_model --custom_model_path "path/to/your/model"
+   
+   Available configurations (for default model):
+   --config baseline        # Best performance (default)
+   --config sensitive       # More sensitive detection
+   --config high_quality    # Higher quality processing
+   --config maximum_detail  # Maximum detail detection
+   
+   COMPARE MODELS:
+   # Test default model first
+   python OCR_Evaluation/evaluate_with_ground_truth.py --dataset_dir "test_dataset" --output "default_model_results.json"
+   
+   # Test custom model
+   python OCR_Evaluation/evaluate_with_ground_truth.py --dataset_dir "test_dataset" --use_custom_model --output "custom_model_results.json"
 
---------------------------------------------------------------------------------
+5. PARAMETER_TEST.PY
+   Purpose: Test different OCR parameter configurations
+   
+   Basic parameter testing:
+   python OCR_Evaluation/parameter_test.py --test_dir "test_dataset/val_images" --max_images 50
 
-5. TEST_GROUND_TRUTH_EVALUATION.PY
-   Purpose: Quick test run
+6. DEBUG SCRIPTS (for troubleshooting)
    
-   Simple run (no arguments needed, uses default paths):
-   python test_ground_truth_evaluation.py
+   a) Test Ground Truth Evaluation (Quick test with 10 images):
+   python debug_scripts/test_ground_truth_evaluation.py
 
---------------------------------------------------------------------------------
+   b) Debug Single Image OCR:
+   python debug_scripts/debug_ocr.py
 
-6. TRAIN_CUSTOM_MODEL.PY
-   Purpose: Custom model training (advanced)
-   
-   Evaluate current model:
-   python train_custom_model.py --dataset_path "your_dataset_path" \
-                                --test_images "converted_test_dataset\val_images" \
-                                --action evaluate
-   
-   Prepare training data:
-   python train_custom_model.py --dataset_path "your_dataset_path" \
-                                --action prepare \
-                                --dataset_format txt
-   
-   Create training configuration:
-   python train_custom_model.py --dataset_path "your_dataset_path" \
-                                --action config
 
 ================================================================================
-                              TYPICAL WORKFLOW ORDER
+                           EXPECTED RESULTS AND TIMELINE
 ================================================================================
 
-1. Start with testing:
-   python test_ground_truth_evaluation.py
+SETUP PHASE (1-2 hours):
+- Environment setup: ~30 minutes
+- Model download: ~15 minutes
+- Data preparation: ~30 minutes
 
-2. Analyze your dataset:
-   python analyze_dataset.py --label_file "converted_test_dataset\val_label.txt" --images_dir "converted_test_dataset\val_images"
+TRAINING PHASE (4-8 hours):
+- Actual training time depends on dataset size and hardware
+- Monitor training progress in the console output
+- Training automatically saves checkpoints every 10 epochs
 
-3. Baseline evaluation:
-   python evaluate_baseline.py --test_dir "converted_test_dataset\val_images" --max_images 50
+EVALUATION PHASE (30 minutes):
+- Model evaluation on validation set
+- Export for integration into your OCR pipeline
 
-4. Comprehensive evaluation:
-   python evaluate_with_ground_truth.py --dataset_dir "converted_test_dataset" --max_images 100
+EXPECTED IMPROVEMENT:
+- Current accuracy: ~52%
+- Expected accuracy after training: 70-80%
+- This represents a significant improvement that should make your OCR much more reliable
 
-5. Custom training (if needed):
-   Use train_custom_model.py with appropriate parameters
+================================================================================
+                        PRE-TRAINED MODEL CONFIGURATION
+================================================================================
+
+The script now allows you to specify a custom pre-trained model path:
+
+OPTION 1: Use default path (place model in default location)
+- Place your .pdparams file at: pretrained_models/PP-OCRv5_server_rec_pretrained.pdparams
+- Run training without --pretrained_model_path argument
+
+OPTION 2: Specify custom path
+- Place your .pdparams file anywhere
+- Use: --pretrained_model_path "path/to/your/model.pdparams"
+
+DOWNLOAD PRE-TRAINED MODEL MANUALLY:
+You can download the official PP-OCRv5_server_rec model from:
+https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/PP-OCRv5_server_rec_pretrained.pdparams
+
+Or use any compatible PaddleOCR recognition model in .pdparams format.
+
+KEY CHANGES:
+✅ Removed automatic download functionality
+✅ Added configurable pre-trained model path parameter
+✅ More flexible model management
+✅ Manual control over which pre-trained model to use
+
+================================================================================
+                           TROUBLESHOOTING
+================================================================================
+
+COMMON ISSUES AND SOLUTIONS:
+
+1. Git not found:
+   - Install Git from https://git-scm.com/
+   - Ensure 'git' is in your system PATH
+
+2. Pre-trained model not found:
+   - Ensure the .pdparams file exists at the specified path
+   - Download manually from the URL above
+   - Check file permissions and path syntax
+
+3. CUDA/GPU issues:
+   - Training will automatically fall back to CPU if GPU is not available
+   - For GPU training, ensure CUDA-compatible PyTorch is installed
+
+4. Memory issues:
+   - Reduce batch_size_per_card in the configuration file
+   - The default is set to 256, try reducing to 128 or 64
+
+5. Path issues:
+   - All paths are handled automatically
+   - Script works from the model_training directory
+   - Use absolute paths for pre-trained models when in doubt
+
+================================================================================
+                           NEXT STEPS AFTER TRAINING
+================================================================================
+
+After successful training and export:
+
+1. ✅ Your trained model will be in training_output/exported_model/
+2. ✅ Integration files: inference.json, inference.pdiparams, inference.yml
+3. ✅ Update your OCR service to use the custom model
+4. ✅ Test the improved model on your production data
+5. ✅ Monitor accuracy improvements in real-world usage
+
+The exported model can be directly integrated into the PaddleOCR API by
+updating the model path in your OCR configuration.
 
 ================================================================================

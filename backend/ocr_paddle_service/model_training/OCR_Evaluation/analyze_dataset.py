@@ -3,11 +3,21 @@ Dataset analysis script to understand the ground truth data characteristics
 """
 
 import os
+import sys
 from pathlib import Path
 from collections import Counter, defaultdict
 import json
+from datetime import datetime
+import statistics
 
-def analyze_ground_truth_dataset(label_file: str, images_dir: str = None):
+# Add parent directories to path for imports
+current_dir = Path(__file__).parent
+model_training_dir = current_dir.parent
+sys.path.insert(0, str(model_training_dir))
+sys.path.insert(0, str(model_training_dir.parent))  # ocr_paddle_service
+sys.path.insert(0, str(model_training_dir.parent.parent))  # backend
+
+def analyze_ground_truth_dataset(label_file: str, images_dir: str | None = None):
     """
     Analyze the ground truth dataset to understand characteristics of the names.
     """
@@ -228,8 +238,6 @@ def analyze_ground_truth_dataset(label_file: str, images_dir: str = None):
 
 def main():
     import argparse
-    from datetime import datetime
-    import statistics
     
     parser = argparse.ArgumentParser(description="Analyze ground truth dataset")
     parser.add_argument("--label_file", required=True, help="Path to label file (e.g., val_label.txt)")
@@ -237,7 +245,20 @@ def main():
     
     args = parser.parse_args()
     
-    analyze_ground_truth_dataset(args.label_file, args.images_dir)
+    # Convert relative paths to absolute paths
+    current_dir = Path(__file__).parent
+    model_training_dir = current_dir.parent
+    
+    # Handle relative paths from model_training directory
+    label_file = args.label_file
+    if not os.path.isabs(label_file):
+        label_file = str(model_training_dir / label_file)
+    
+    images_dir = args.images_dir
+    if images_dir and not os.path.isabs(images_dir):
+        images_dir = str(model_training_dir / images_dir)
+    
+    analyze_ground_truth_dataset(label_file, images_dir)
 
 if __name__ == "__main__":
     main()

@@ -15,8 +15,12 @@ from typing import Optional, Dict
 import difflib
 import re
 
-# Add parent directory to path to import paddleocr
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add parent directories to path for imports
+current_dir = Path(__file__).parent
+model_training_dir = current_dir.parent
+sys.path.insert(0, str(model_training_dir))
+sys.path.insert(0, str(model_training_dir.parent))  # ocr_paddle_service
+sys.path.insert(0, str(model_training_dir.parent.parent))  # backend
 
 try:
     from paddleocr import PaddleOCR
@@ -79,7 +83,7 @@ def normalize_text(text: str) -> str:
     return normalized
 
 
-def calculate_similarity_metrics(predicted: str, expected: str) -> Dict[str, float]:
+def calculate_similarity_metrics(predicted: str, expected: str) -> Dict:
     """
     Calculate various similarity metrics between predicted and expected text.
     
@@ -124,7 +128,10 @@ def evaluate_with_ground_truth(
     dataset_dir: str, 
     label_file: str, 
     output_file: str = "ground_truth_evaluation.json", 
-    max_images: Optional[int] = None
+    max_images: Optional[int] = None,
+    ocr_config: Optional[str] = "baseline",
+    use_custom_model: bool = False,
+    custom_model_path: Optional[str] = None
 ):
     """
     Evaluate OCR model against ground truth labels.
@@ -134,22 +141,137 @@ def evaluate_with_ground_truth(
         label_file: Path to the label file (e.g., val_label.txt)
         output_file: Output file for results
         max_images: Maximum number of images to process (None for all)
+        ocr_config: OCR configuration to use ('baseline', 'sensitive', 'high_quality', 'maximum_detail')
+        use_custom_model: Whether to use custom trained model instead of default PaddleOCR
+        custom_model_path: Path to custom model directory (if use_custom_model=True)
     """
     print("Loading ground truth labels...")
     ground_truth = load_ground_truth_labels(label_file)
     
-    print("Initializing PaddleOCR model...")
+    print("Initializing OCR model...")
     
-    # Initialize with optimized settings for name recognition
-    ocr = PaddleOCR(
-        lang='en',
-        text_det_box_thresh=0.3,
-        text_det_unclip_ratio=2.0,
-        text_det_limit_side_len=2048,
-        text_det_limit_type='max',
-        use_textline_orientation=True,
-        text_recognition_batch_size=6
-    )
+    # Initialize variables
+    model_type = "Unknown"
+    selected_config = {'name': 'Unknown', 'params': {}}
+    ocr = None
+    
+    # Determine which model to use
+    if use_custom_model:
+        if not custom_model_path:
+            # Default to the exported model path
+            current_dir = Path(__file__).parent
+            model_training_dir = current_dir.parent
+            custom_model_path = str(model_training_dir / "training_output" / "exported_model")
+        
+        print(f"Using CUSTOM trained model from: {custom_model_path}")
+        
+        # Check if custom model exists
+        if not os.path.exists(custom_model_path):
+            print(f"Error: Custom model path {custom_model_path} does not exist")
+            print("Please ensure the model has been exported successfully")
+            return None
+        
+        # Initialize PaddleOCR with custom model
+        try:
+            # Use the correct parameter names as shown in the deprecation warnings
+            ocr = PaddleOCR(
+                use_textline_orientation=True,  # Updated from use_angle_cls
+                text_recognition_model_dir=custom_model_path,  # Updated from rec_model_dir
+                lang='en',
+                text_detection_model_dir=None,  # Updated from det_model_dir (use default)
+                textline_orientation_model_dir=None,  # Updated from cls_model_dir (use default)
+            )
+            model_type = f"Custom trained model from {custom_model_path}"
+            print(f"✅ Successfully loaded custom model")
+        except Exception as e:
+            print(f"❌ Error initializing custom model: {e}")
+            print("This might be due to:")
+            print("1. Model format incompatibility")
+            print("2. Missing model files in the directory")
+            print("3. Model architecture mismatch with PaddleOCR expectations")
+            print(f"Files found in {custom_model_path}:")
+            if os.path.exists(custom_model_path):
+                files = os.listdir(custom_model_path)
+                for file in files:
+                    print(f"  - {file}")
+            else:
+                print(f"  Directory {custom_model_path} does not exist!")
+            exit(1)
+    
+    if not use_custom_model:
+        print("Using DEFAULT PaddleOCR model")
+        
+        # Define OCR configurations based on your parameter testing results
+        ocr_configs = {
+            'baseline': {
+                'name': 'Baseline with Large Images (Best Performance)',
+                'params': {
+                    'lang': 'en',
+                    'text_det_box_thresh': 0.6,
+                    'text_det_unclip_ratio': 1.5,
+                    'text_det_limit_side_len': 8000,
+                    'text_det_limit_type': 'max',
+                    'use_textline_orientation': False,
+                    'text_recognition_batch_size': 6
+                }
+            },
+            'sensitive': {
+                'name': 'Sensitive Detection',
+                'params': {
+                    'lang': 'en',
+                    'text_det_box_thresh': 0.4,
+                    'text_det_unclip_ratio': 1.8,
+                    'text_det_limit_side_len': 10000,
+                    'text_det_limit_type': 'max',
+                    'use_textline_orientation': True,
+                    'text_recognition_batch_size': 1
+                }
+            },
+            'high_quality': {
+                'name': 'High Quality Processing',
+                'params': {
+                    'lang': 'en',
+                    'text_det_box_thresh': 0.35,
+                    'text_det_unclip_ratio': 2.0,
+                    'text_det_limit_side_len': 12000,
+                    'text_det_limit_type': 'max',
+                    'use_textline_orientation': True,
+                    'text_recognition_batch_size': 1,
+                    'text_det_thresh': 0.3
+                }
+            },
+            'maximum_detail': {
+                'name': 'Maximum Detail',
+                'params': {
+                    'lang': 'en',
+                    'text_det_box_thresh': 0.3,
+                    'text_det_unclip_ratio': 2.2,
+                    'text_det_limit_side_len': 15000,
+                    'text_det_limit_type': 'max',
+                    'use_textline_orientation': True,
+                    'text_recognition_batch_size': 1,
+                    'text_det_thresh': 0.25
+                }
+            }
+        }
+        
+        # Get the selected configuration
+        if ocr_config not in ocr_configs:
+            print(f"Warning: Unknown OCR config '{ocr_config}'. Using 'baseline' instead.")
+            ocr_config = 'baseline'
+        
+        selected_config = ocr_configs[ocr_config]
+        print(f"Using OCR configuration: {selected_config['name']}")
+        print(f"Parameters: {selected_config['params']}")
+        
+        # Initialize with the selected configuration
+        ocr = PaddleOCR(**selected_config['params'])
+        model_type = f"PaddleOCR default English model - {selected_config['name']}"
+    
+    # Ensure OCR is properly initialized
+    if ocr is None:
+        print("❌ Failed to initialize OCR model")
+        return None
     
     # Find validation images directory
     val_images_dir = Path(dataset_dir) / "val_images"
@@ -179,7 +301,9 @@ def evaluate_with_ground_truth(
     
     results = {
         'model_info': {
-            'model_type': 'PaddleOCR default English model',
+            'model_type': model_type,
+            'configuration_name': selected_config['name'] if not use_custom_model else 'Custom Model',
+            'configuration_params': selected_config['params'] if not use_custom_model else {'custom_model_path': custom_model_path},
             'evaluation_date': datetime.now().isoformat(),
             'dataset_directory': str(dataset_dir),
             'label_file': str(label_file),
@@ -221,34 +345,92 @@ def evaluate_with_ground_truth(
                 results['summary']['failed_predictions'] += 1
                 continue
             
-            # Run OCR
+            # Run OCR using predict() method for proper dictionary format
             ocr_result = ocr.predict(image)
             
-            # Process OCR results - handle the new predict() method format
+            # Process OCR results - predict() returns list containing OCRResult objects
             detected_texts = []
             
+            # Check if ocr_result is a list with at least one element
             if ocr_result and isinstance(ocr_result, list) and len(ocr_result) > 0:
-                # Extract the first result dict
-                result_dict = ocr_result[0]
+                # Extract the first OCRResult object from the result
+                result_obj = ocr_result[0]
                 
-                # Extract recognized texts and scores
-                if 'rec_texts' in result_dict and 'rec_scores' in result_dict:
-                    rec_texts = result_dict['rec_texts']
-                    rec_scores = result_dict['rec_scores']
-                    rec_polys = result_dict.get('rec_polys', [])
+                # Debug: Print available attributes to understand the structure
+                print(f"    OCRResult type: {type(result_obj)}")
+                if hasattr(result_obj, '__dict__'):
+                    available_attrs = [attr for attr in dir(result_obj) if not attr.startswith('_')]
+                    print(f"    Available attributes: {available_attrs[:10]}...")  # Show first 10
+                
+                # Try multiple ways to access the text data
+                rec_texts = None
+                rec_scores = None
+                
+                # Method 1: Direct attribute access
+                if hasattr(result_obj, 'rec_texts') and hasattr(result_obj, 'rec_scores'):
+                    print("    Using direct attribute access")
+                    rec_texts = result_obj.rec_texts
+                    rec_scores = result_obj.rec_scores
+                
+                # Method 2: Dictionary-style access
+                elif hasattr(result_obj, '__getitem__'):
+                    try:
+                        print("    Trying dictionary-style access")
+                        rec_texts = result_obj['rec_texts']
+                        rec_scores = result_obj['rec_scores']
+                    except (KeyError, TypeError):
+                        pass
+                
+                # Method 3: Check if it has a data or result attribute
+                elif hasattr(result_obj, 'data'):
+                    print("    Trying data attribute")
+                    data = result_obj.data
+                    if isinstance(data, dict):
+                        rec_texts = data.get('rec_texts')
+                        rec_scores = data.get('rec_scores')
+                
+                # Method 4: Check for text/texts attribute
+                if rec_texts is None:
+                    for attr_name in ['texts', 'text', 'recognized_texts', 'predictions']:
+                        if hasattr(result_obj, attr_name):
+                            print(f"    Found {attr_name} attribute")
+                            texts_attr = getattr(result_obj, attr_name)
+                            if isinstance(texts_attr, list):
+                                rec_texts = texts_attr
+                                # Try to find corresponding scores
+                                score_attrs = ['scores', 'confidences', 'confidence']
+                                for score_attr in score_attrs:
+                                    if hasattr(result_obj, score_attr):
+                                        rec_scores = getattr(result_obj, score_attr)
+                                        break
+                                if rec_scores is None:
+                                    # Create dummy scores if not found
+                                    rec_scores = [1.0] * len(rec_texts)
+                                break
+                
+                # If we found text data, process it
+                if rec_texts is not None and rec_scores is not None:
+                    print(f"    Found {len(rec_texts)} texts and {len(rec_scores)} scores")
                     
-                    # Combine texts and scores
-                    for i, text in enumerate(rec_texts):
-                        confidence = rec_scores[i] if i < len(rec_scores) else 0.0
-                        bbox = rec_polys[i] if i < len(rec_polys) else "unknown"
-                        
-                        if text and len(text.strip()) > 0:
-                            detected_texts.append({
-                                'text': text,
-                                'confidence': float(confidence),
-                                'bbox': str(bbox) if not isinstance(bbox, str) else bbox
-                            })
-                            all_confidences.append(confidence)
+                    # Ensure both lists have the same length
+                    if isinstance(rec_texts, list) and isinstance(rec_scores, list) and len(rec_texts) == len(rec_scores):
+                        for text, confidence in zip(rec_texts, rec_scores):
+                            # Only add if we have actual text
+                            if text and len(str(text).strip()) > 0:
+                                detected_texts.append({
+                                    'text': str(text),
+                                    'confidence': float(confidence),
+                                    'bbox': None  # predict() doesn't provide bbox info
+                                })
+                                all_confidences.append(float(confidence))
+                        print(f"    Successfully extracted {len(detected_texts)} text segments")
+                    else:
+                        print(f"    Warning: rec_texts and rec_scores length mismatch")
+                        print(f"    rec_texts: {type(rec_texts)} with {len(rec_texts) if isinstance(rec_texts, list) else 'N/A'} items")
+                        print(f"    rec_scores: {type(rec_scores)} with {len(rec_scores) if isinstance(rec_scores, list) else 'N/A'} items")
+                else:
+                    print(f"    Warning: Could not find text data in OCRResult object")
+                    print(f"    Available methods: {[m for m in dir(result_obj) if not m.startswith('_') and callable(getattr(result_obj, m))][:5]}...")
             
             # Combine all detected text
             full_predicted_text = ' '.join([item['text'] for item in detected_texts])
@@ -411,34 +593,65 @@ def main():
                        help="Output file for results")
     parser.add_argument("--max_images", type=int, default=None, 
                        help="Maximum number of images to process (default: all)")
+    parser.add_argument("--config", default="baseline", 
+                       choices=["baseline", "sensitive", "high_quality", "maximum_detail"],
+                       help="OCR configuration to use (default: baseline - best performing)")
+    parser.add_argument("--use_custom_model", action="store_true",
+                       help="Use custom trained model instead of default PaddleOCR")
+    parser.add_argument("--custom_model_path", 
+                       help="Path to custom model directory (default: training_output/exported_model)")
     
     args = parser.parse_args()
     
-    if not os.path.exists(args.dataset_dir):
-        print(f"Error: Dataset directory {args.dataset_dir} does not exist")
+    # Convert relative paths to absolute paths
+    current_dir = Path(__file__).parent
+    model_training_dir = current_dir.parent
+    
+    dataset_dir = args.dataset_dir
+    if not os.path.isabs(dataset_dir):
+        dataset_dir = str(model_training_dir / dataset_dir)
+    
+    if not os.path.exists(dataset_dir):
+        print(f"Error: Dataset directory {dataset_dir} does not exist")
         return
     
     # Default label file path if not specified
     if not args.label_file:
-        args.label_file = os.path.join(args.dataset_dir, "val_label.txt")
+        label_file = os.path.join(dataset_dir, "val_label.txt")
+    else:
+        label_file = args.label_file
+        if not os.path.isabs(label_file):
+            label_file = str(model_training_dir / label_file)
     
-    if not os.path.exists(args.label_file):
-        print(f"Error: Label file {args.label_file} does not exist")
+    if not os.path.exists(label_file):
+        print(f"Error: Label file {label_file} does not exist")
         return
     
-    print("Starting ground truth evaluation of PaddleOCR model...")
-    print(f"Dataset directory: {args.dataset_dir}")
-    print(f"Label file: {args.label_file}")
-    print(f"Output file: {args.output}")
+    # Handle output file path
+    output_file = args.output
+    if not os.path.isabs(output_file):
+        output_file = str(model_training_dir / output_file)
+    
+    print("Starting ground truth evaluation of OCR model...")
+    print(f"Dataset directory: {dataset_dir}")
+    print(f"Label file: {label_file}")
+    print(f"Output file: {output_file}")
+    print(f"OCR configuration: {args.config}")
+    print(f"Use custom model: {args.use_custom_model}")
+    if args.use_custom_model and args.custom_model_path:
+        print(f"Custom model path: {args.custom_model_path}")
     if args.max_images:
         print(f"Max images to process: {args.max_images}")
     print()
     
     results = evaluate_with_ground_truth(
-        args.dataset_dir, 
-        args.label_file, 
-        args.output, 
-        args.max_images
+        dataset_dir, 
+        label_file, 
+        output_file, 
+        args.max_images,
+        args.config,
+        args.use_custom_model,
+        args.custom_model_path
     )
     
     print("\nEvaluation complete!")
