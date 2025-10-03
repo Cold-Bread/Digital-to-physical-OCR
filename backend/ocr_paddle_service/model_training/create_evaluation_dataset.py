@@ -5,8 +5,9 @@ Simple script to create evaluation dataset from CSV
 import pandas as pd
 import shutil
 from pathlib import Path
+from typing import Optional
 
-def create_evaluation_dataset(csv_file: str, images_dir: str, output_dir: str, max_samples: int = None):
+def create_evaluation_dataset(csv_file: str, images_dir: str, output_dir: str, max_samples: Optional[int] = None):
     """
     Create evaluation dataset from CSV file
     
@@ -71,7 +72,7 @@ def create_evaluation_dataset(csv_file: str, images_dir: str, output_dir: str, m
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description="Create evaluation dataset from CSV")
+    parser = argparse.ArgumentParser(description="Create dataset from CSV")
     parser.add_argument("--csv_file", required=True, help="Path to CSV file")
     parser.add_argument("--images_dir", required=True, help="Directory containing images")
     parser.add_argument("--output_dir", default="evaluation_dataset", help="Output directory")
@@ -87,4 +88,4 @@ if __name__ == "__main__":
     )
     
     print(f"\nYou can now run evaluation with:")
-    print(f"python evaluate_with_ground_truth.py --dataset_dir {args.output_dir} --max_images {args.max_samples or 'all'}")
+    print(f"python OCR_Evaluation/evaluate_with_ground_truth.py --dataset_dir {args.output_dir} --max_images {args.max_samples or 'all'}")

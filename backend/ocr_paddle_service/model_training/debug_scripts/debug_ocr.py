@@ -2,10 +2,24 @@
 Debug script to understand what's happening with OCR processing
 """
 
+import sys
 import cv2
 import numpy as np
-from paddleocr import PaddleOCR
 import traceback
+from pathlib import Path
+
+# Add parent directories to path for imports
+current_dir = Path(__file__).parent
+model_training_dir = current_dir.parent
+sys.path.insert(0, str(model_training_dir))
+sys.path.insert(0, str(model_training_dir.parent))  # ocr_paddle_service
+sys.path.insert(0, str(model_training_dir.parent.parent))  # backend
+
+try:
+    from paddleocr import PaddleOCR
+except ImportError:
+    print("PaddleOCR not installed. Please install with: pip install paddleocr")
+    sys.exit(1)
 
 def debug_single_image(image_path, expected_text):
     print(f"🔍 Debugging image: {image_path}")
@@ -127,7 +141,43 @@ def debug_single_image(image_path, expected_text):
 
 def main():
     # Test with just one sample image
-    debug_single_image("converted_test_dataset/val_images/val_000000.jpg", "ELIOT")
+    current_dir = Path(__file__).parent
+    # Look for sample image in the dataset
+    dataset_dir = current_dir.parent / "test_dataset"
+    val_images_dir = dataset_dir / "val_images"
+    
+    # Find the first available image
+    sample_image = None
+    expected_text = "ELIOT"  # Default expected text
+    
+    if val_images_dir.exists():
+        # Look for any jpg/png file
+        for ext in ["*.jpg", "*.jpeg", "*.png"]:
+            images = list(val_images_dir.glob(ext))
+            if images:
+                sample_image = str(images[0])
+                break
+    
+    if not sample_image:
+        print("❌ No sample images found in dataset")
+        print(f"Looking in: {val_images_dir}")
+        return
+    
+    # Try to get expected text from label file
+    label_file = dataset_dir / "val_label.txt"
+    if label_file.exists():
+        try:
+            with open(label_file, 'r', encoding='utf-8') as f:
+                first_line = f.readline().strip()
+                if '\t' in first_line:
+                    _, expected_text = first_line.split('\t', 1)
+        except Exception as e:
+            print(f"Warning: Could not read label file: {e}")
+    
+    print(f"Using sample image: {sample_image}")
+    print(f"Expected text: {expected_text}")
+    
+    debug_single_image(sample_image, expected_text)
 
 if __name__ == "__main__":
     main()
