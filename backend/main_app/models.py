@@ -5,6 +5,7 @@ class OCRResult(BaseModel):
     name: str
     dob: Optional[str] = None
     score: Optional[float] = None
+    source_model: Optional[str] = None
 
 class Patient(BaseModel):
     name: str
