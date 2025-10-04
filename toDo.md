@@ -1,16 +1,12 @@
                           frontend changes:
 
-pagnation:
-
-- change row selector to Fill (show rows to bottom of screen, no scroll) or All (show all results, scroll is fine)
+table changes:
 
 ---
 
-table changes:
-
-- solve column sizing issues
-
 Control Panel:
+
+- read the frontend for familarity, i need to add a reset tables button similar to the view image button. it will reset the history of the box record table like the undo all button does. it will show an "are you sure" prompt so you cant fat finger it. it will remove all images from the
 
 ---
 

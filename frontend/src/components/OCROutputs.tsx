@@ -7,10 +7,10 @@ import "./DataGrid.css";
 
 interface OCROutputsProps {
 	boxData: Patient[];
-	selectedFile: File | null;
+	selectedFiles?: File[];
 }
 
-const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
+const OCROutputs = ({ boxData = [], selectedFiles = [] }: OCROutputsProps) => {
 	const allOCRResults = useOCRStore((s) => s.allOCRResults || []);
 	const setPatientList = useOCRStore((s) => s.setPatientList);
 
@@ -44,17 +44,27 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 		console.log("=====================");
 	}
 
-	// Create enumerated image source mapping
+	// Create enumerated image source mapping based on selectedFiles order
 	const imageSourceMapping = useMemo(() => {
-		const uniqueSources = Array.from(
-			new Set(allOCRResults.map((r) => r.imageSource).filter(Boolean))
-		);
 		const mapping = new Map<string, string>();
-		uniqueSources.forEach((source, index) => {
-			mapping.set(source!, `${index + 1}`);
-		});
+
+		if (selectedFiles.length > 0) {
+			// Use selectedFiles order for consistent numbering with tabs
+			selectedFiles.forEach((file, index) => {
+				mapping.set(file.name, `${index + 1}`);
+			});
+		} else {
+			// Fallback to unique sources from OCR results
+			const uniqueSources = Array.from(
+				new Set(allOCRResults.map((r) => r.imageSource).filter(Boolean))
+			);
+			uniqueSources.forEach((source, index) => {
+				mapping.set(source!, `${index + 1}`);
+			});
+		}
+
 		return mapping;
-	}, [allOCRResults]);
+	}, [allOCRResults, selectedFiles]);
 
 	// NEW: Create aligned OCR table that matches box records table structure
 	const alignedOCRData = useMemo(() => {

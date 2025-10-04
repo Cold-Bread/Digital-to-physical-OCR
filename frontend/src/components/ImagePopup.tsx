@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import "./ImagePopup.css";
 
 interface ImagePopupProps {
-	file: File | null;
+	files: File[];
 	open: boolean;
 	onClose: () => void;
 	anchorRight?: boolean; // If true, hug right wall
@@ -12,7 +12,7 @@ const MIN_WIDTH = 400;
 const MIN_HEIGHT = 300;
 
 const ImagePopup: React.FC<ImagePopupProps> = ({
-	file,
+	files,
 	open,
 	onClose,
 	anchorRight = true,
@@ -34,6 +34,7 @@ const ImagePopup: React.FC<ImagePopupProps> = ({
 	});
 	const [zoom, setZoom] = useState(1); // 1 = 100%
 	const [rotation, setRotation] = useState(0); // degrees
+	const [activeTabIndex, setActiveTabIndex] = useState(0); // Track active tab
 	// Rotate image 90deg clockwise
 	const handleRotate = () => setRotation((r) => (r + 90) % 360);
 	const popupRef = useRef<HTMLDivElement>(null);
@@ -44,7 +45,15 @@ const ImagePopup: React.FC<ImagePopupProps> = ({
 		setPosition({ x: 0, y: 0 });
 		setSize({ width: 600, height: 600 });
 		setZoom(1);
+		setActiveTabIndex(0);
 	}, []);
+
+	// Reset active tab when files change
+	useEffect(() => {
+		if (files.length > 0 && activeTabIndex >= files.length) {
+			setActiveTabIndex(0);
+		}
+	}, [files, activeTabIndex]);
 
 	// Hug right wall only on initial open
 	useEffect(() => {
@@ -134,7 +143,9 @@ const ImagePopup: React.FC<ImagePopupProps> = ({
 	const handleZoomOut = () => setZoom((z) => Math.max(z - 0.1, 0.1));
 	const handleResetZoom = () => setZoom(1);
 
-	if (!open || !file) return null;
+	if (!open || files.length === 0) return null;
+
+	const currentFile = files[activeTabIndex];
 
 	return (
 		<div
@@ -152,7 +163,11 @@ const ImagePopup: React.FC<ImagePopupProps> = ({
 			{/* Header with drag handle and controls */}
 			<div className="image-popup-header" onMouseDown={onDragStart}>
 				<span className="drag-handle">☰</span>
-				<span className="title">Original Image</span>
+				<span className="title">
+					{files.length > 1
+						? `Image ${activeTabIndex + 1} of ${files.length}`
+						: "Original Image"}
+				</span>
 				{/* Zoom and rotate controls */}
 				<div className="controls">
 					<button
@@ -193,19 +208,55 @@ const ImagePopup: React.FC<ImagePopupProps> = ({
 					</button>
 				</div>
 			</div>
-			{/* Image area with scroll */}
-			<div className="image-container">
-				<div className="image-wrapper">
-					<img
-						ref={imgRef}
-						src={URL.createObjectURL(file)}
-						alt="Original document"
-						className="popup-image"
-						style={{
-							transform: `scale(${zoom}) rotate(${rotation}deg)`,
-							transformOrigin: "center",
-						}}
-					/>
+
+			{/* Main content area with tabs and image */}
+			<div className="popup-main-content">
+				{/* Vertical Manila folder tabs */}
+				{files.length > 1 && (
+					<div className="manila-tabs-container">
+						{files.slice(0, 6).map((file, index) => {
+							const tabSpacing = files.length <= 4 ? 3 : 0; // 3px gap if 4 or fewer tabs, tight if more
+							return (
+								<div
+									key={`${file.name}-${index}`}
+									className={`manila-tab ${
+										index === activeTabIndex ? "active" : ""
+									}`}
+									style={{
+										zIndex: index === activeTabIndex ? 10 : 9 - index,
+										top: `${index * (32 + tabSpacing)}px`,
+									}}
+									onClick={() => {
+										setActiveTabIndex(index);
+										// Reset zoom and rotation when switching tabs
+										setZoom(1);
+										setRotation(0);
+									}}
+									title={file.name}
+								>
+									<span className="manila-tab-number">{index + 1}</span>
+								</div>
+							);
+						})}
+						{files.length > 6 && (
+							<div className="manila-tab-overflow">+{files.length - 6}</div>
+						)}
+					</div>
+				)}
+				{/* Image area with scroll */}
+				<div className="image-container">
+					<div className="image-wrapper">
+						<img
+							ref={imgRef}
+							src={URL.createObjectURL(currentFile)}
+							alt={`Document ${activeTabIndex + 1}`}
+							className="popup-image"
+							style={{
+								transform: `scale(${zoom}) rotate(${rotation}deg)`,
+								transformOrigin: "center",
+							}}
+						/>
+					</div>
 				</div>
 			</div>
 			{/* Resize handle */}

@@ -12,11 +12,16 @@ const API_ENDPOINTS = {
 };
 
 interface ControlPanelProps {
-	selectedFile: File | null;
-	onFileSelect: (file: File | null) => void;
+	selectedFiles: File[];
+	onFileAdd: (file: File) => void;
+	onFilesClear: () => void;
 }
 
-const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
+const ControlPanel = ({
+	selectedFiles,
+	onFileAdd,
+	onFilesClear,
+}: ControlPanelProps) => {
 	const [boxNumber, setBoxNumber] = useState("");
 	const [imagePopupOpen, setImagePopupOpen] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -149,26 +154,27 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 	};
 
 	const handleProcessImage = async () => {
-		if (!selectedFile) return;
+		const lastFile = selectedFiles[selectedFiles.length - 1];
+		if (!lastFile) return;
 
 		// Check for duplicate image
-		if (isImageProcessed(selectedFile.name)) {
+		if (isImageProcessed(lastFile.name)) {
 			const shouldProceed = window.confirm(
-				`The image "${selectedFile.name}" has already been processed. Do you want to process it again? This will add duplicate results to the table.`
+				`The image "${lastFile.name}" has already been processed. Do you want to process it again? This will add duplicate results to the table.`
 			);
 			if (!shouldProceed) {
 				return;
 			}
 		}
 
-		console.log("Processing image:", selectedFile.name);
+		console.log("Processing image:", lastFile.name);
 		setIsLoading(true);
 
 		try {
 			// Send image to /process-image
 			console.log("Processing image...");
 			const formData = new FormData();
-			formData.append("file", selectedFile);
+			formData.append("file", lastFile);
 
 			const ocrRes = await fetch(API_ENDPOINTS.PROCESS_IMAGE, {
 				method: "POST",
@@ -187,7 +193,7 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 				paddleOCR: ocrData.paddleOCR || [],
 			};
 
-			setOCRResponse(transformedData, selectedFile.name);
+			setOCRResponse(transformedData, lastFile.name);
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "An unknown error occurred";
@@ -203,7 +209,7 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 		const file = e.target.files?.[0];
 		if (file) {
 			if (file.type.startsWith("image/")) {
-				onFileSelect(file);
+				onFileAdd(file);
 			} else {
 				alert("Please select an image file");
 				e.target.value = "";
@@ -241,13 +247,26 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 					className="control-panel-button"
 					onClick={() => fileInputRef.current?.click()}
 					disabled={isLoading}
+					title={
+						selectedFiles.length > 0
+							? `${selectedFiles.length} image${
+									selectedFiles.length !== 1 ? "s" : ""
+							  } selected. Click to add more.`
+							: "Click to select an image"
+					}
 				>
-					{selectedFile ? selectedFile.name : "Choose Image"}
+					{selectedFiles.length === 0
+						? "Add Image"
+						: selectedFiles.length === 1
+						? selectedFiles[0].name.length > 20
+							? selectedFiles[0].name.substring(0, 17) + "..."
+							: selectedFiles[0].name
+						: `${selectedFiles.length} Images`}
 				</button>
 				<button
 					className="control-panel-button"
 					onClick={handleProcessImage}
-					disabled={!selectedFile || isLoading}
+					disabled={selectedFiles.length === 0 || isLoading}
 				>
 					{isLoading ? "Processing..." : "Send Image"}
 				</button>
@@ -275,15 +294,27 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 					Save to Sheet
 				</button>
 			</div>
-			<button
-				className="image-popup-button"
-				onClick={() => setImagePopupOpen(true)}
-				disabled={!selectedFile || isLoading || imagePopupOpen}
-			>
-				View Image
-			</button>
+			<div className="image-controls-group">
+				{selectedFiles.length > 0 && (
+					<button
+						className="control-panel-button secondary"
+						onClick={onFilesClear}
+						disabled={isLoading}
+						title="Clear all selected images"
+					>
+						Clear Images
+					</button>
+				)}
+				<button
+					className="image-popup-button"
+					onClick={() => setImagePopupOpen(true)}
+					disabled={selectedFiles.length === 0 || isLoading || imagePopupOpen}
+				>
+					View Images
+				</button>
+			</div>
 			<ImagePopup
-				file={selectedFile}
+				files={selectedFiles}
 				open={imagePopupOpen}
 				onClose={() => setImagePopupOpen(false)}
 				anchorRight={true}

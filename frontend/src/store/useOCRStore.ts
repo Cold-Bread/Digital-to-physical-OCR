@@ -41,6 +41,9 @@ interface OCRStore {
 	isLoading: boolean;
 	setIsLoading: (loading: boolean) => void;
 
+	// Clear OCR data only (keep patient list)
+	clearOCRData: () => void;
+
 	// Reset function for zero-state
 	resetAll: () => void;
 }
@@ -265,6 +268,16 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 	isLoading: false,
 	setIsLoading: (loading) => {
 		set({ isLoading: loading });
+	},
+
+	// Clear only OCR-related data (keep patient list and history)
+	clearOCRData: () => {
+		set({
+			ocrResponse: null,
+			allOCRResults: [],
+			matchedResults: new Map(),
+			processedImages: new Set(),
+		});
 	},
 
 	// Reset everything
