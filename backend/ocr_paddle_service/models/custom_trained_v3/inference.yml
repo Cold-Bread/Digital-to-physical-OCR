@@ -1,0 +1,109 @@
+Global:
+  model_name: custom_trained_v3
+  algorithm: SVTR
+  model_type: rec
+  character_type: en
+  max_text_length: 25
+  use_space_char: true
+
+Architecture:
+  model_type: rec
+  algorithm: SVTR
+  Transform: null
+  Backbone:
+    name: SVTRNet
+    img_size: [32, 128]
+    out_char_num: 25
+    out_channels: 192
+    patch_merging: Conv
+    embed_dim: [64, 128, 256]
+    depth: [3, 6, 3]
+    num_heads: [2, 4, 8]
+    mixer: ["Local", "Local", "Local", "Local", "Local", "Local", "Global", "Global", "Global", "Global", "Global", "Global"]
+    local_mixer: [[7, 11], [7, 11], [7, 11]]
+    last_stage: true
+    prenorm: false
+  Neck:
+    name: SequenceEncoder
+    encoder_type: reshape
+  Head:
+    name: CTCHead
+
+PreProcess:
+  transform_ops:
+  - DecodeImage:
+      channel_first: false
+      img_mode: BGR
+  - RecResizeImg:
+      image_shape: [3, 32, 128]
+      padding: false
+  - KeepKeys:
+      keep_keys:
+      - image
+
+PostProcess:
+  name: CTCLabelDecode
+  character_dict:
+  - '0'
+  - '1'
+  - '2'
+  - '3'
+  - '4'
+  - '5'
+  - '6'
+  - '7'
+  - '8'
+  - '9'
+  - a
+  - b
+  - c
+  - d
+  - e
+  - f
+  - g
+  - h
+  - i
+  - j
+  - k
+  - l
+  - m
+  - n
+  - o
+  - p
+  - q
+  - r
+  - s
+  - t
+  - u
+  - v
+  - w
+  - x
+  - y
+  - z
+  - A
+  - B
+  - C
+  - D
+  - E
+  - F
+  - G
+  - H
+  - I
+  - J
+  - K
+  - L
+  - M
+  - N
+  - O
+  - P
+  - Q
+  - R
+  - S
+  - T
+  - U
+  - V
+  - W
+  - X
+  - Y
+  - Z
+  - ' '

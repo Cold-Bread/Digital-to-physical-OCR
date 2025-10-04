@@ -1,5 +1,5 @@
 
-from backend.shared_utils.logging_config import get_logger
+from shared_utils.logging_config import get_logger
 from paddleocr import PaddleOCR
 
 

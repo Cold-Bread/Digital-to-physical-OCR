@@ -1,0 +1,8 @@
+# Base OCR requirements
+paddleocr
+python-multipart
+opencv-python
+scikit-image
+albumentations
+lmdb
+rapidfuzz

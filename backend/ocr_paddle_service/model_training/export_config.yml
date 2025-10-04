@@ -1,0 +1,89 @@
+Architecture:
+  Backbone:
+    depth:
+    - 3
+    - 6
+    - 3
+    embed_dim:
+    - 64
+    - 128
+    - 256
+    img_size:
+    - 32
+    - 128
+    last_stage: true
+    local_mixer:
+    - - 7
+      - 11
+    - - 7
+      - 11
+    - - 7
+      - 11
+    mixer:
+    - Local
+    - Local
+    - Local
+    - Local
+    - Local
+    - Local
+    - Global
+    - Global
+    - Global
+    - Global
+    - Global
+    - Global
+    name: SVTRNet
+    num_heads:
+    - 2
+    - 4
+    - 8
+    out_channels: 192
+    out_char_num: 25
+    patch_merging: Conv
+    prenorm: false
+  Head:
+    name: CTCHead
+  Neck:
+    encoder_type: reshape
+    name: SequenceEncoder
+  Transform: null
+  algorithm: SVTR
+  model_type: rec
+Global:
+  algorithm: SVTR
+  character_dict_path: C:/Users/Jacob/Personal Projects/Digital-to-physical-OCR/backend/ocr_paddle_service/models/custom_trained_v3/en_dict.txt
+  character_type: en
+  max_text_length: 25
+  model_name: SVTR
+  model_type: rec
+  pretrained_model: C:/Users/Jacob/Personal Projects/Digital-to-physical-OCR/backend/ocr_paddle_service/model_training/training_output/rec_models/best_accuracy
+  save_inference_dir: C:/Users/Jacob/Personal Projects/Digital-to-physical-OCR/backend/ocr_paddle_service/models/custom_trained_v3/
+  use_space_char: true
+Loss:
+  name: CTCLoss
+PostProcess:
+  name: CTCLabelDecode
+Eval:
+  dataset:
+    name: SimpleDataSet
+    data_dir: ./dummy_data/
+    label_file_list:
+    - ./dummy_data/dummy_list.txt
+    transforms:
+    - DecodeImage:
+        img_mode: BGR
+        channel_first: false
+    - CTCLabelEncode: null
+    - SVTRRecResizeImg:
+        image_shape: [3, 32, 128]
+        padding: false
+    - KeepKeys:
+        keep_keys:
+        - image
+        - label
+        - length
+  loader:
+    shuffle: false
+    drop_last: false
+    batch_size_per_card: 1
+    num_workers: 1

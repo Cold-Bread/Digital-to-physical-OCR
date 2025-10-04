@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from main_app.routes import *
+from main_app.routes import ocr_router, sheet_router
 
 
 # Configure logging

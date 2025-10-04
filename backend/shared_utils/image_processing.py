@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from PIL import Image, ImageEnhance
 
 def enhance_image_cv2(image):
     """
@@ -33,31 +32,6 @@ def enhance_image_cv2(image):
         
         # Convert back to BGR for OCR
         return cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
-    except Exception as e:
-        raise RuntimeError(f"Image enhancement failed: {str(e)}")
-
-def enhance_image_pil(image):
-    """
-    Enhance image using PIL for better OCR results.
-    Args:
-        image: PIL Image object
-    Returns:
-        enhanced PIL Image object
-    """
-    try:
-        # Convert to grayscale while keeping RGB format
-        gray = ImageEnhance.Color(image).enhance(0.0)
-        
-        # Enhance contrast
-        contrast = ImageEnhance.Contrast(gray).enhance(2.0)
-        
-        # Enhance sharpness
-        sharp = ImageEnhance.Sharpness(contrast).enhance(1.5)
-        
-        # Enhance brightness
-        bright = ImageEnhance.Brightness(sharp).enhance(1.2)
-        
-        return bright
     except Exception as e:
         raise RuntimeError(f"Image enhancement failed: {str(e)}")
 
@@ -129,92 +103,4 @@ def classify_text(text: str) -> dict:
     except Exception as e:
         raise ValueError(f"Text classification failed: {str(e)}")
 
-def extract_text_regions(image, method='vertical_slice'):
-    """
-    Extract regions from an image for better OCR processing.
-    Args:
-        image: numpy array (CV2 image) or PIL Image
-        method: str, 'vertical_slice' or 'overlap'
-    Returns:
-        list of numpy arrays (CV2 images)
-    """
-    try:
-        # Convert PIL Image to CV2 if needed
-        if not isinstance(image, np.ndarray):
-            image = np.array(image)
-        
-        if method == 'vertical_slice':
-            return _extract_vertical_slices(image)
-        else:
-            return _extract_overlapping_regions(image)
-    except Exception as e:
-        raise RuntimeError(f"Region extraction failed: {str(e)}")
 
-def _extract_vertical_slices(image):
-    """
-    Split image into vertical slices based on text line detection.
-    Returns list of CV2 images.
-    """
-    # Convert to grayscale if not already
-    if len(image.shape) == 3:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    else:
-        gray = image
-        
-    # Apply threshold to get binary image
-    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    
-    # Get horizontal projection profile
-    horizontal_proj = np.sum(binary, axis=1)
-    
-    # Find potential text line boundaries
-    boundaries = []
-    in_text = False
-    min_gap = 5  # Minimum pixel gap between text lines
-    
-    for i, proj in enumerate(horizontal_proj):
-        if not in_text and proj > 0:
-            # Start of text line
-            if not boundaries or i - boundaries[-1][1] >= min_gap:
-                boundaries.append([i, i])
-                in_text = True
-        elif in_text and proj == 0:
-            # End of text line
-            boundaries[-1][1] = i
-            in_text = False
-    
-    # Extract regions with padding
-    regions = []
-    padding = 5  # Pixels of padding above and below each line
-    
-    for start, end in boundaries:
-        # Add padding but stay within image bounds
-        y_start = max(0, start - padding)
-        y_end = min(image.shape[0], end + padding)
-        
-        # Extract the region
-        region = image[y_start:y_end, :]
-        
-        # Only keep regions that are likely to contain text
-        if region.shape[0] > 10:  # Minimum height threshold
-            regions.append(region)
-    
-    return regions
-
-def _extract_overlapping_regions(image, region_height_factor=3):
-    """
-    Extract overlapping regions from an image.
-    Returns list of CV2 images.
-    """
-    height = image.shape[0]
-    regions = []
-    
-    # Create overlapping regions
-    for i in range(0, height, height//(region_height_factor*2)):
-        region_height = height//region_height_factor
-        start = max(0, i - region_height//4)
-        end = min(height, i + region_height)
-        region = image[start:end, :]
-        regions.append(region)
-        
-    return regions
