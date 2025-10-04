@@ -117,7 +117,6 @@ def analyze_ground_truth_dataset(label_file: str, images_dir: str | None = None)
     
     print("📏 NAME LENGTH STATISTICS:")
     if name_stats['name_lengths']:
-        import statistics
         lengths = name_stats['name_lengths']
         print(f"   Average length: {statistics.mean(lengths):.1f} characters")
         print(f"   Median length: {statistics.median(lengths):.1f} characters")
@@ -227,7 +226,11 @@ def analyze_ground_truth_dataset(label_file: str, images_dir: str | None = None)
         }
     }
     
-    analysis_file = "dataset_analysis.json"
+    # Ensure evaluation_results directory exists
+    eval_results_dir = model_training_dir / "evaluation_results"
+    eval_results_dir.mkdir(exist_ok=True)
+    
+    analysis_file = eval_results_dir / "dataset_analysis.json"
     with open(analysis_file, 'w', encoding='utf-8') as f:
         json.dump(analysis_results, f, indent=2, ensure_ascii=False)
     

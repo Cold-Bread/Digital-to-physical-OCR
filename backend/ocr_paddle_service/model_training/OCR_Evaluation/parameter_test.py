@@ -381,7 +381,10 @@ def parameter_test():
             print(f"  Confidence: {100*best_config['avg_confidence']:.1f}%")
     
     # Save results
-    output_file = current_dir / "parameter_test_results.json"
+    eval_results_dir = current_dir.parent / "evaluation_results"
+    eval_results_dir.mkdir(exist_ok=True)
+    output_file = eval_results_dir / "parameter_test_results.json"
+    
     results_data = {
         'test_date': datetime.now().isoformat(),
         'tested_images': len(available_images),

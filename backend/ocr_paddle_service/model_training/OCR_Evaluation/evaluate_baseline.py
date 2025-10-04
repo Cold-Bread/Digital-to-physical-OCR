@@ -26,7 +26,7 @@ except ImportError:
     print("PaddleOCR not installed. Please install with: pip install paddleocr")
     sys.exit(1)
 
-def evaluate_current_model(test_images_dir: str, output_file: str = "evaluation_results.json", max_images: Optional[int] = None):
+def evaluate_current_model(test_images_dir: str, output_file: str = "baseline_evaluation.json", max_images: Optional[int] = None):
     """
     Quick evaluation of current PaddleOCR model on test images
     
@@ -171,7 +171,16 @@ def evaluate_current_model(test_images_dir: str, output_file: str = "evaluation_
         results['summary']['min_confidence'] = float(np.min(all_confidences))
         results['summary']['max_confidence'] = float(np.max(all_confidences))
     
-    # Save results
+    # Ensure evaluation_results directory exists and save results
+    current_dir = Path(__file__).parent
+    model_training_dir = current_dir.parent
+    eval_results_dir = model_training_dir / "evaluation_results"
+    eval_results_dir.mkdir(exist_ok=True)
+    
+    # If output_file is just a filename, put it in evaluation_results
+    if not os.path.isabs(output_file) and os.path.dirname(output_file) == "":
+        output_file = str(eval_results_dir / output_file)
+    
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
     
@@ -206,7 +215,7 @@ def evaluate_current_model(test_images_dir: str, output_file: str = "evaluation_
 def main():
     parser = argparse.ArgumentParser(description="Evaluate current PaddleOCR model")
     parser.add_argument("--test_dir", required=True, help="Directory containing test images")
-    parser.add_argument("--output", default="evaluation_results.json", help="Output file for results")
+    parser.add_argument("--output", default="baseline_evaluation.json", help="Output file for results")
     parser.add_argument("--max_images", type=int, default=None, help="Maximum number of images to process (default: all)")
     
     args = parser.parse_args()
@@ -235,8 +244,8 @@ def main():
         print(f"Max images to process: {args.max_images}")
     print()
     
-    results = evaluate_current_model(test_dir, output_file, args.max_images)
-    
+    evaluate_current_model(test_dir, output_file, args.max_images)
+
     print("\nEvaluation complete!")
     print("Next steps:")
     print("1. Review the results in the JSON file")

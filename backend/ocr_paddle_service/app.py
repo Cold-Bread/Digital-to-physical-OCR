@@ -5,6 +5,8 @@ import cv2
 import logging
 from shared_utils.types import TextType
 from shared_utils.image_processing import enhance_image_cv2, classify_text
+from models.model_config import get_model_config, list_available_models
+from typing import Optional
 
 # Configure logging to both file and console
 import os
@@ -41,34 +43,83 @@ logger.addHandler(file_handler)
 
 app = FastAPI()
 
-# Initialize OCR models with optimized parameters
-ocr_models = {
-    TextType.HANDWRITTEN: PaddleOCR(
-        lang='en',
-        det_db_box_thresh=0.3,  # Lower threshold for handwriting detection
-        det_db_unclip_ratio=2.0,  # Better stroke connection
-        det_limit_side_len=2048,  # High resolution for detail
-        det_limit_type='max',
-        use_angle_cls=True,  # Enable rotation detection
-        rec_batch_num=6  # Smaller batch size for better recognition
-    ),
-    TextType.PRINTED: PaddleOCR(
-        lang='en',
-        det_db_box_thresh=0.6,   # Higher for cleaner printed text detection
-        det_db_unclip_ratio=1.5,  # Standard for printed text
-        det_limit_side_len=1280,  # Larger size for better detail
-        det_limit_type='max'
-    )
-}
+# Initialize OCR models with configurable model support
+def create_ocr_models(model_name: Optional[str] = None):
+    """Create OCR models with optional custom model specification"""
+    if model_name and model_name != "default":
+        # Use specified custom model for both text types
+        try:
+            config = get_model_config(model_name)
+            params = config.get_paddle_params()
+            logger.info(f"Initializing custom model '{config.name}' with params: {params}")
+            custom_ocr = PaddleOCR(**params)
+            logger.info(f"Successfully initialized custom OCR model: {config.name}")
+            return {
+                TextType.HANDWRITTEN: custom_ocr,
+                TextType.PRINTED: custom_ocr
+            }
+        except Exception as e:
+            logger.error(f"Failed to load custom model '{model_name}': {e}")
+            logger.info("Falling back to default models")
+    
+    # Use default models
+    handwritten_config = get_model_config("default_handwritten")
+    printed_config = get_model_config("default_printed")
+    
+    logger.info("Using default PaddleOCR models")
+    return {
+        TextType.HANDWRITTEN: PaddleOCR(**handwritten_config.get_paddle_params()),
+        TextType.PRINTED: PaddleOCR(**printed_config.get_paddle_params())
+    }
+
+# Global OCR models - can be switched at runtime
+ocr_models = create_ocr_models()
+current_model_name = "default"
+
+@app.get("/models")
+async def get_available_models():
+    """Get list of available OCR models"""
+    return {
+        "current_model": current_model_name,
+        "available_models": list_available_models()
+    }
+
+@app.get("/switch_model")
+async def switch_model(model_name: str = Query(..., description="Name of the model to switch to")):
+    """Switch to a different OCR model"""
+    global ocr_models, current_model_name
+    
+    try:
+        if model_name == "default":
+            ocr_models = create_ocr_models()
+            current_model_name = "default"
+            return {"status": "success", "message": f"Switched to default models"}
+        else:
+            ocr_models = create_ocr_models(model_name)
+            current_model_name = model_name
+            return {"status": "success", "message": f"Switched to model: {model_name}"}
+    except Exception as e:
+        logger.error(f"Failed to switch to model '{model_name}': {e}")
+        return {"status": "error", "message": f"Failed to switch model: {str(e)}"}
 
 @app.post("/ocr")
 async def run_paddleocr(
     file: UploadFile = File(...),
-    text_type: TextType = Query(TextType.PRINTED, description="Type of text to recognize")
+    text_type: TextType = Query(TextType.PRINTED, description="Type of text to recognize"),
+    model_name: Optional[str] = Query(None, description="Optional: Use specific model for this request")
 ):
     try:
         logger.info(f"Starting OCR process with text_type: {text_type}")
         logger.info(f"Processing file: {file.filename}")
+        
+        # Use specified model for this request or fall back to current global model
+        if model_name and model_name != current_model_name:
+            logger.info(f"Using temporary model: {model_name}")
+            temp_models = create_ocr_models(model_name)
+            ocr = temp_models[text_type]
+        else:
+            logger.info(f"Using current model: {current_model_name}")
+            ocr = ocr_models[text_type]
         
         # Read the image file
         contents = await file.read()
@@ -82,20 +133,8 @@ async def run_paddleocr(
         # Enhance image
         enhanced = enhance_image_cv2(image)
         
-        # Save enhanced image for debugging
-        debug_path = os.path.join(log_dir, "debug_enhanced.png")
-        cv2.imwrite(debug_path, enhanced)
-        logger.info(f"Saved enhanced image to {debug_path}")
-        
-        # Save original image for comparison
-        # cv2.imwrite("debug_original.png", image)
-        # logger.info("Saved original image for comparison")
-        
-        # Log image properties
-        logger.info(f"Image properties - Shape: {enhanced.shape}, Type: {enhanced.dtype}, Min: {enhanced.min()}, Max: {enhanced.max()}")
-        
-        # Get the appropriate OCR model
-        ocr = ocr_models[text_type]
+        # Log image properties for debugging
+        logger.info(f"Image properties - Shape: {enhanced.shape}, Type: {enhanced.dtype}")
         
         # Attempt OCR
         logger.info("Starting OCR detection")

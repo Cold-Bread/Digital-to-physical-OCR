@@ -127,7 +127,7 @@ def calculate_similarity_metrics(predicted: str, expected: str) -> Dict:
 def evaluate_with_ground_truth(
     dataset_dir: str, 
     label_file: str, 
-    output_file: str = "ground_truth_evaluation.json", 
+    output_file: str = "default_ground_truth_evaluation.json", 
     max_images: Optional[int] = None,
     ocr_config: Optional[str] = "baseline",
     use_custom_model: bool = False,
@@ -499,7 +499,16 @@ def evaluate_with_ground_truth(
     if all_word_accuracies:
         results['summary']['avg_word_accuracy'] = float(np.mean(all_word_accuracies))
     
-    # Save results
+    # Ensure evaluation_results directory exists and save results
+    current_dir = Path(__file__).parent
+    model_training_dir = current_dir.parent
+    eval_results_dir = model_training_dir / "evaluation_results"
+    eval_results_dir.mkdir(exist_ok=True)
+    
+    # If output_file is just a filename, put it in evaluation_results
+    if not os.path.isabs(output_file) and os.path.dirname(output_file) == "":
+        output_file = str(eval_results_dir / output_file)
+    
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
     
@@ -589,7 +598,7 @@ def main():
                        help="Directory containing the converted test dataset (with val_images/ and val_label.txt)")
     parser.add_argument("--label_file", 
                        help="Path to label file (default: dataset_dir/val_label.txt)")
-    parser.add_argument("--output", default="ground_truth_evaluation.json", 
+    parser.add_argument("--output", default="default_ground_truth_evaluation.json", 
                        help="Output file for results")
     parser.add_argument("--max_images", type=int, default=None, 
                        help="Maximum number of images to process (default: all)")

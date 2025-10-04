@@ -2,7 +2,6 @@
 Test the fixed evaluation script with a single image
 """
 
-import os
 import sys
 import cv2
 from pathlib import Path
@@ -66,7 +65,6 @@ def test_single_image():
         detected_texts = []
         for line in ocr_result[0]:
             if len(line) >= 2:
-                bbox = line[0]
                 text_info = line[1]
                 
                 if isinstance(text_info, (list, tuple)) and len(text_info) >= 2:

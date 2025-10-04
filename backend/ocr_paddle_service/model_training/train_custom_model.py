@@ -563,6 +563,14 @@ class PaddleOCRTrainer:
             print(f"❌ Config file not found at {config_path}")
             return False
         
+        # Convert model path to absolute path if it's relative
+        if not os.path.isabs(model_path):
+            model_path = os.path.abspath(model_path)
+        
+        # Remove .pdparams extension if present, as PaddleOCR automatically appends it
+        if model_path.endswith('.pdparams'):
+            model_path = model_path[:-10]  # Remove '.pdparams'
+        
         # Change to PaddleOCR directory for evaluation
         original_cwd = os.getcwd()
         try:
@@ -582,7 +590,6 @@ class PaddleOCRTrainer:
             result = subprocess.run(eval_command, check=True)
             
             if result.returncode == 0:
-                print("✅ Evaluation completed successfully!")
                 return True
             else:
                 print(f"❌ Evaluation failed with return code: {result.returncode}")
@@ -611,6 +618,14 @@ class PaddleOCRTrainer:
         if not Path(config_path).exists():
             print(f"❌ Config file not found at {config_path}")
             return False
+        
+        # Convert model path to absolute path if it's relative
+        if not os.path.isabs(model_path):
+            model_path = os.path.abspath(model_path)
+        
+        # Remove .pdparams extension if present, as PaddleOCR automatically appends it
+        if model_path.endswith('.pdparams'):
+            model_path = model_path[:-10]  # Remove '.pdparams'
         
         # Change to PaddleOCR directory for export
         original_cwd = os.getcwd()

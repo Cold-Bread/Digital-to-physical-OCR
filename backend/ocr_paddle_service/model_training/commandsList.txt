@@ -87,13 +87,13 @@ python train_custom_model.py --action prepare --dataset_format paddleocr
 python train_custom_model.py --action config
 
 # Step 6: Execute the training (this takes several hours)
-python train_custom_model.py --action train --pretrained_model_path "path/to/pretrained_model.pdparams"
+python train_custom_model.py --action train --pretrained_model_path "path/to/pretrained_model"
 
 # Step 7: Evaluate the trained model
-python train_custom_model.py --action evaluate --model_path "training_output/rec_models/best_accuracy.pdparams"
+python train_custom_model.py --action evaluate --model_path "training_output/rec_models/best_accuracy"
 
 # Step 8: Export the model for use in your application
-python train_custom_model.py --action export --model_path "training_output/rec_models/best_accuracy.pdparams"
+python train_custom_model.py --action export --model_path "training_output/rec_models/best_accuracy"
 
 ================================================================================
                            EVALUATION SCRIPTS
