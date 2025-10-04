@@ -10,12 +10,15 @@ router = APIRouter()
 # Update if your service uses a different port
 PADDLE_OCR_URL = "http://localhost:8001/ocr"
 
-async def process_ocr(url: str, image_data: bytes, filename: str, text_type: TextType) -> list:
+async def process_ocr(url: str, image_data: bytes, filename: str, text_type: TextType, use_fallback: bool = True) -> list:
     try:
         response = requests.post(
             url,
             files = {"file": (filename, image_data, "image/jpeg")},
-            params = {"text_type": text_type}
+            params = {
+                "text_type": text_type,
+                "use_fallback": use_fallback
+            }
         )
         response.raise_for_status()
         result = response.json()
@@ -30,11 +33,13 @@ async def process_ocr(url: str, image_data: bytes, filename: str, text_type: Tex
 @router.post("/process-image")
 async def process_image(
     file: UploadFile = File(...),
-    text_type: TextType = Query(TextType.PRINTED, description = "Type of text to recognize")):
+    text_type: TextType = Query(TextType.PRINTED, description = "Type of text to recognize"),
+    use_fallback: bool = Query(True, description = "Use fallback to default model if custom model results are poor")):
     try:
         contents = await file.read()
         
-        paddle_ocr_result = await process_ocr(PADDLE_OCR_URL, contents, file.filename, text_type)
+        # Process with custom model first, then fallback if needed
+        paddle_ocr_result = await process_ocr(PADDLE_OCR_URL, contents, file.filename, text_type, use_fallback)
         
         if not paddle_ocr_result:
             raise HTTPException(

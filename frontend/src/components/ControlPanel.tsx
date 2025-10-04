@@ -24,6 +24,7 @@ const ControlPanel = ({
 }: ControlPanelProps) => {
 	const [boxNumber, setBoxNumber] = useState("");
 	const [imagePopupOpen, setImagePopupOpen] = useState(false);
+	const [useFallback, setUseFallback] = useState(true);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const setOCRResponse = useOCRStore((s) => s.setOCRResponse);
@@ -176,7 +177,11 @@ const ControlPanel = ({
 			const formData = new FormData();
 			formData.append("file", lastFile);
 
-			const ocrRes = await fetch(API_ENDPOINTS.PROCESS_IMAGE, {
+			// Build URL with query parameters
+			const url = new URL(API_ENDPOINTS.PROCESS_IMAGE);
+			url.searchParams.append("use_fallback", useFallback.toString());
+
+			const ocrRes = await fetch(url.toString(), {
 				method: "POST",
 				body: formData,
 			});
@@ -270,6 +275,17 @@ const ControlPanel = ({
 				>
 					{isLoading ? "Processing..." : "Send Image"}
 				</button>
+				<div className="control-panel-option">
+					<label>
+						<input
+							type="checkbox"
+							checked={useFallback}
+							onChange={(e) => setUseFallback(e.target.checked)}
+							disabled={isLoading}
+						/>
+						<span>Use fallback model if custom model results are poor</span>
+					</label>
+				</div>
 				<div className="divider"></div>
 				<button
 					className="control-panel-button secondary"
