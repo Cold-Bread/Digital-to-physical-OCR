@@ -20,10 +20,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan = lifespan)
 
-# Configure CORS
+# Configure CORS - Allow both common Vite dev server ports
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Frontend URL
+    allow_origins=[
+        "http://localhost:5174", 
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

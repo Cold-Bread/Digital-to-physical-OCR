@@ -54,29 +54,45 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 				throw new Error(`Failed to save: ${response.statusText}`);
 			}
 
-			// If we have a box number, refresh the data for that box
-			if (currentBoxNumber) {
-				console.log("Refreshing box data...");
-				const boxRes = await fetch(API_ENDPOINTS.BOX(currentBoxNumber), {
-					method: "POST",
-					headers: {
-						Accept: "application/json",
-						"Content-Type": "application/json",
-					},
-				});
+			// OPTIMIZATION: Use returned data instead of making another API call
+			const result = await response.json();
+			console.log("✅ Save operation completed!", result);
 
-				if (!boxRes.ok) {
-					throw new Error(`Failed to refresh box data: ${boxRes.statusText}`);
-				}
+			if (result.updated_patients) {
+				// Backend returned updated data - no need to refresh
+				setPatientList(result.updated_patients);
+				console.log("📈 Used returned data - skipped refresh API call");
 
-				const updatedPatients = await boxRes.json();
-				setPatientList(updatedPatients);
-				alert("Records saved successfully! Data has been refreshed.");
+				// Show performance information
+				const performanceInfo = result.performance || {};
+				const message = `Records saved successfully!${
+					performanceInfo.total_time ? ` (${performanceInfo.total_time})` : ""
+				}`;
+				alert(message);
 			} else {
-				// If no box number, just clear the state
-				setPatientList([]);
-				setOCRResponse(null, "");
-				alert("Records saved successfully!");
+				// Fallback: refresh data if backend doesn't return updated records
+				console.log("🔄 Backend didn't return updated data - refreshing...");
+				if (currentBoxNumber) {
+					const boxRes = await fetch(API_ENDPOINTS.BOX(currentBoxNumber), {
+						method: "POST",
+						headers: {
+							Accept: "application/json",
+							"Content-Type": "application/json",
+						},
+					});
+
+					if (!boxRes.ok) {
+						throw new Error(`Failed to refresh box data: ${boxRes.statusText}`);
+					}
+
+					const updatedPatients = await boxRes.json();
+					setPatientList(updatedPatients);
+					alert("Records saved successfully! Data has been refreshed.");
+				} else {
+					setPatientList([]);
+					setOCRResponse(null, "");
+					alert("Records saved successfully!");
+				}
 			}
 		} catch (err) {
 			const errorMessage =

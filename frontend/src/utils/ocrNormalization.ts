@@ -1,16 +1,39 @@
 import { OCRResult } from "../types/backendResponse";
 
 /**
- * SIMPLIFIED OCR NORMALIZATION
- * Let Fuse.js handle fuzzy name matching - we just clean obvious garbage and normalize dates
+ * ENHANCED OCR NORMALIZATION
+ *
+ * Improvements made to handle common OCR issues:
+ *
+ * 1. **Standalone DOB Detection**: Detects when a DOB appears alone and should be paired with previous name
+ * 2. **Misclassified Date Handling**: Identifies dates that ended up in the name field and moves them to DOB
+ * 3. **Mixed Text Extraction**: Extracts name and date from single OCR results containing both
+ * 4. **Enhanced Date Patterns**: Better recognition of various date formats and OCR errors
+ * 5. **Smart Name Validation**: Prevents dates from being classified as names
+ * 6. **Improved Stacking Logic**: Multiple strategies for combining related OCR entries
+ *
+ * The normalization now handles these common scenarios:
+ * - "John Smith" followed by "12/25/1990" → combines into single entry
+ * - "John Smith 12/25/1990" → extracts into separate name and DOB
+ * - Name field containing "12/25/1990" → moves to DOB field
+ * - Better DOB prefix detection (DOB:, DATE OF BIRTH:, etc.)
  */
 
-// Date format patterns
+// Date format patterns - enhanced for better OCR date detection
 const DATE_PATTERNS = [
 	/^\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{2,4}$/, // MM/DD/YYYY, MM-DD-YY, etc.
 	/^(DOB|SOB|OOB|D0B|D08)[-:]?\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{2,4}$/i, // DOB:MM/DD/YYYY
 	/^\d{1,2}[,]\d{1,2}[-]\d{1,2}[-]\d{2,4}$/, // Mixed separators like "13,6-29-77"
 	/^\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{1,4}$/, // Flexible pattern for OCR errors
+	/^\d{1,2}[\/\-,]\d{1,2}$/, // MM/DD or MM-DD (missing year)
+	/^\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{1,2}$/, // MM/DD/YY with single digit year
+];
+
+// Enhanced patterns to detect dates that might be misclassified as names
+const LIKELY_DATE_PATTERNS = [
+	/\b\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{2,4}\b/, // Date anywhere in string
+	/\b(DOB|D\.O\.B\.?|DATE OF BIRTH)[-:\s]*\d/i, // DOB prefix patterns
+	/^\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{2,4}/, // Starts with date
 ];
 
 // Patterns that indicate complete garbage (not names)
@@ -38,6 +61,12 @@ function isGarbageName(name: string): boolean {
 	// Must be reasonable length
 	if (trimmed.length < 2 || trimmed.length > 50) return true;
 
+	// Check if it's actually a date disguised as a name
+	if (isValidDate(trimmed)) return true;
+
+	// Check for obvious date patterns even if they don't pass full validation
+	if (/^\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{1,4}$/.test(trimmed)) return true;
+
 	return false;
 }
 
@@ -50,9 +79,23 @@ function normalizeDate(dateStr: string): string | null {
 	let cleaned = dateStr.trim();
 	console.log(`🗓️ Normalizing date: "${dateStr}" -> cleaned: "${cleaned}"`);
 
-	// Remove common OCR prefixes (SOB -> DOB, etc.)
-	cleaned = cleaned.replace(/^(DOB|SOB|OOB|D0B|D08)[-:]?\s*/i, "");
-	console.log(`After prefix removal: "${cleaned}"`);
+	// Remove ALL variations of DOB prefixes (comprehensive OCR error handling)
+	cleaned = cleaned.replace(
+		/^(DOB|SOB|OOB|D0B|D08|DOE|D0E|DOG|D0G|BOB|B0B|BOD|B0D|DATE OF BIRTH|BIRTH DATE|BIRTHDAY)[-:\s]*/i,
+		""
+	);
+
+	// Handle DOB that might appear anywhere in the string, not just at start
+	cleaned = cleaned.replace(
+		/(DOB|SOB|OOB|D0B|D08|DOE|D0E|DOG|D0G|BOB|B0B|BOD|B0D)[-:\s]+/gi,
+		""
+	);
+
+	// Remove common OCR suffixes and cleanup
+	cleaned = cleaned.replace(/[,.]*$/, ""); // Remove trailing punctuation
+	cleaned = cleaned.replace(/^[:\-\s]+/, ""); // Remove leading separators
+
+	console.log(`After comprehensive DOB prefix/suffix removal: "${cleaned}"`);
 
 	// Skip obviously invalid dates
 	if (
@@ -135,6 +178,83 @@ function isValidDate(dateStr: string): boolean {
 }
 
 /**
+ * Check if a string looks like it contains a date (even if mixed with other text)
+ */
+function containsLikelyDate(text: string): boolean {
+	if (!text || typeof text !== "string") return false;
+	return LIKELY_DATE_PATTERNS.some((pattern) => pattern.test(text.trim()));
+}
+
+/**
+ * Extract date from text that contains both name and date
+ */
+function extractDateFromMixedText(
+	text: string
+): { name: string; date: string } | null {
+	if (!text || typeof text !== "string") return null;
+
+	const trimmed = text.trim();
+
+	// Look for DOB prefix patterns (most explicit)
+	const dobMatch = trimmed.match(
+		/^(.+?)\s+(DOB|D\.O\.B\.?|DATE OF BIRTH|BIRTH DATE)[-:\s]*(.+)$/i
+	);
+	if (dobMatch && dobMatch[1].trim() && dobMatch[3].trim()) {
+		return {
+			name: dobMatch[1].trim(),
+			date: dobMatch[3].trim(),
+		};
+	}
+
+	// Look for dates at the end with various separators
+	const dateAtEndMatch = trimmed.match(
+		/^(.+?)\s+(\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{1,4})$/
+	);
+	if (
+		dateAtEndMatch &&
+		dateAtEndMatch[1].trim() &&
+		!isGarbageName(dateAtEndMatch[1].trim())
+	) {
+		return {
+			name: dateAtEndMatch[1].trim(),
+			date: dateAtEndMatch[2].trim(),
+		};
+	}
+
+	// Look for dates at the beginning
+	const dateAtStartMatch = trimmed.match(
+		/^(\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{1,4})\s+(.+)$/
+	);
+	if (
+		dateAtStartMatch &&
+		dateAtStartMatch[2].trim() &&
+		!isGarbageName(dateAtStartMatch[2].trim())
+	) {
+		return {
+			name: dateAtStartMatch[2].trim(),
+			date: dateAtStartMatch[1].trim(),
+		};
+	}
+
+	// Look for comma-separated name and date
+	const commaSeparatedMatch = trimmed.match(
+		/^([^,]+),\s*(\d{1,2}[\/\-,]\d{1,2}[\/\-,]\d{1,4})$/
+	);
+	if (
+		commaSeparatedMatch &&
+		commaSeparatedMatch[1].trim() &&
+		!isGarbageName(commaSeparatedMatch[1].trim())
+	) {
+		return {
+			name: commaSeparatedMatch[1].trim(),
+			date: commaSeparatedMatch[2].trim(),
+		};
+	}
+
+	return null;
+}
+
+/**
  * Check if a string is a valid name (not garbage)
  */
 function isValidName(name: string): boolean {
@@ -144,7 +264,7 @@ function isValidName(name: string): boolean {
 
 /**
  * Combine adjacent entries where one has name and other has DOB
- * This handles the backend's stacked entry detection
+ * Enhanced logic to handle more OCR scenarios
  */
 function combineStackedEntries(results: OCRResult[]): OCRResult[] {
 	if (!results || results.length === 0) return results;
@@ -156,7 +276,10 @@ function combineStackedEntries(results: OCRResult[]): OCRResult[] {
 		const current = results[i];
 		const next = i + 1 < results.length ? results[i + 1] : null;
 
-		// Simple combining logic - current has name, next has DOB
+		console.log(`🔍 Processing entry ${i}:`, current);
+		console.log(`🔍 Next entry ${i + 1}:`, next);
+
+		// Case 1: Current has name, next has only DOB (original logic)
 		if (
 			next &&
 			current.name &&
@@ -166,17 +289,79 @@ function combineStackedEntries(results: OCRResult[]): OCRResult[] {
 			next.dob &&
 			next.dob.trim() !== ""
 		) {
-			console.log(`🔗 Combining entries: "${current.name}" + "${next.dob}"`);
+			console.log(
+				`🔗 Case 1 - Combining name + DOB: "${current.name}" + "${next.dob}"`
+			);
 			combined.push({
 				...current,
 				dob: next.dob,
 				score: Math.max(current.score || 0, next.score || 0),
 			});
 			i += 2; // Skip both entries
-		} else {
-			combined.push(current);
-			i += 1;
+			continue;
 		}
+
+		// Case 2: Next entry has a name that looks like a standalone date
+		if (
+			next &&
+			current.name &&
+			current.name.trim() !== "" &&
+			(!current.dob || current.dob.trim() === "") &&
+			next.name &&
+			isValidDate(next.name) && // Next "name" is actually a date
+			(!next.dob || next.dob.trim() === "")
+		) {
+			console.log(
+				`🔗 Case 2 - Name + misclassified date: "${current.name}" + "${next.name}"`
+			);
+			combined.push({
+				...current,
+				dob: normalizeDate(next.name),
+				score: Math.max(current.score || 0, next.score || 0),
+			});
+			i += 2; // Skip both entries
+			continue;
+		}
+
+		// Case 3: Current entry has mixed name+date in one field
+		if (current.name && containsLikelyDate(current.name)) {
+			const extracted = extractDateFromMixedText(current.name);
+			if (extracted) {
+				console.log(
+					`🔗 Case 3 - Extracting from mixed text: "${current.name}" -> name: "${extracted.name}", date: "${extracted.date}"`
+				);
+				combined.push({
+					...current,
+					name: extracted.name,
+					dob: normalizeDate(extracted.date),
+				});
+				i += 1;
+				continue;
+			}
+		}
+
+		// Case 4: Current name field contains a date that should be moved to DOB
+		if (
+			current.name &&
+			current.name.trim() !== "" &&
+			isValidDate(current.name) &&
+			(!current.dob || current.dob.trim() === "")
+		) {
+			console.log(
+				`🔗 Case 4 - Moving date from name to DOB: "${current.name}"`
+			);
+			combined.push({
+				...current,
+				name: "", // Clear name since it was actually a date
+				dob: normalizeDate(current.name),
+			});
+			i += 1;
+			continue;
+		}
+
+		// Default: No special processing needed
+		combined.push(current);
+		i += 1;
 	}
 
 	return combined;
@@ -203,19 +388,72 @@ export function normalizeOCRResults(results: OCRResult[]): OCRResult[] {
 		"results"
 	);
 
-	// Step 2: Minimal cleaning - just remove garbage and normalize dates
+	// Step 2: Clean all DOB fields after stacking to ensure comprehensive prefix removal
 	normalized = normalized.map((result, index) => {
-		console.log(`\n🔍 Processing entry ${index}:`, result);
+		console.log(`\n🧹 Post-stacking DOB cleanup for entry ${index}:`, result);
 
-		// Keep original name if it's not garbage, just trim whitespace
-		const cleanName =
-			result.name && !isGarbageName(result.name) ? result.name.trim() : "";
+		// Clean DOB field if it exists (this catches DOBs that were just combined/moved)
+		let cleanedDOB = result.dob;
+		if (cleanedDOB && cleanedDOB.trim() !== "") {
+			const originalDOB = cleanedDOB;
+			cleanedDOB = normalizeDate(cleanedDOB);
+			console.log(`  🗓️ DOB cleanup: "${originalDOB}" → "${cleanedDOB}"`);
+		}
 
-		// Normalize date if present
-		const cleanDate = result.dob ? normalizeDate(result.dob) : null;
+		return {
+			...result,
+			dob: cleanedDOB,
+		};
+	});
+
+	console.log(
+		"🧽 After post-stacking DOB cleanup:",
+		normalized.length,
+		"results"
+	);
+
+	// Step 3: Enhanced cleaning with better date/name detection
+	normalized = normalized.map((result, index) => {
+		console.log(`\n🔍 Final processing entry ${index}:`, result);
+
+		let cleanName = "";
+		let cleanDate: string | null = null;
+
+		// Handle name field
+		if (result.name && result.name.trim() !== "") {
+			const trimmedName = result.name.trim();
+
+			// Check if name field actually contains a date
+			if (isValidDate(trimmedName)) {
+				console.log(`  📅 Name field contains date: "${trimmedName}"`);
+				cleanDate = normalizeDate(trimmedName);
+			}
+			// Check if name contains mixed name+date
+			else if (containsLikelyDate(trimmedName)) {
+				const extracted = extractDateFromMixedText(trimmedName);
+				if (extracted) {
+					console.log(
+						`  🔀 Extracted from name: name="${extracted.name}", date="${extracted.date}"`
+					);
+					cleanName = extracted.name;
+					cleanDate = normalizeDate(extracted.date);
+				} else if (!isGarbageName(trimmedName)) {
+					cleanName = trimmedName;
+				}
+			}
+			// Regular name processing
+			else if (!isGarbageName(trimmedName)) {
+				cleanName = trimmedName;
+			}
+		}
+
+		// Handle DOB field (only if we haven't already found a date)
+		if (!cleanDate && result.dob && result.dob.trim() !== "") {
+			cleanDate = normalizeDate(result.dob);
+		}
 
 		console.log(`  Original: name="${result.name}", dob="${result.dob}"`);
-		console.log(`  Cleaned: name="${cleanName}", dob="${cleanDate}"`);
+		console.log(`  Enhanced: name="${cleanName}", dob="${cleanDate}"`);
 
 		return {
 			...result,
@@ -224,7 +462,7 @@ export function normalizeOCRResults(results: OCRResult[]): OCRResult[] {
 		};
 	});
 
-	// Step 3: Filter out completely empty entries
+	// Step 4: Filter out completely empty entries
 	const filtered = normalized.filter((result, index) => {
 		const hasName = result.name && result.name.trim() !== "";
 		const hasDate = result.dob && result.dob.trim() !== "";
@@ -250,4 +488,10 @@ export function normalizeOCRResults(results: OCRResult[]): OCRResult[] {
 }
 
 // Export utility functions for testing
-export { isValidName, isValidDate, combineStackedEntries };
+export {
+	isValidName,
+	isValidDate,
+	combineStackedEntries,
+	containsLikelyDate,
+	extractDateFromMixedText,
+};
