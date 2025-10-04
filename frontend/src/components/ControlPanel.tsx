@@ -155,69 +155,109 @@ const ControlPanel = ({
 	};
 
 	const handleProcessImage = async () => {
-		const lastFile = selectedFiles[selectedFiles.length - 1];
-		if (!lastFile) return;
+		if (selectedFiles.length === 0) return;
 
-		// Check for duplicate image
-		if (isImageProcessed(lastFile.name)) {
+		// Check for already processed images
+		const alreadyProcessedFiles = selectedFiles.filter((file) =>
+			isImageProcessed(file.name)
+		);
+
+		if (alreadyProcessedFiles.length > 0) {
 			const shouldProceed = window.confirm(
-				`The image "${lastFile.name}" has already been processed. Do you want to process it again? This will add duplicate results to the table.`
+				`${alreadyProcessedFiles.length} image(s) have already been processed. Do you want to process all ${selectedFiles.length} images again? This will add duplicate results to the table.`
 			);
 			if (!shouldProceed) {
 				return;
 			}
 		}
 
-		console.log("Processing image:", lastFile.name);
+		console.log(`Processing ${selectedFiles.length} images...`);
 		setIsLoading(true);
 
 		try {
-			// Send image to /process-image
-			console.log("Processing image...");
-			const formData = new FormData();
-			formData.append("file", lastFile);
+			// Process all images sequentially
+			for (let i = 0; i < selectedFiles.length; i++) {
+				const file = selectedFiles[i];
+				console.log(
+					`Processing image ${i + 1}/${selectedFiles.length}:`,
+					file.name
+				);
 
-			// Build URL with query parameters
-			const url = new URL(API_ENDPOINTS.PROCESS_IMAGE);
-			url.searchParams.append("use_fallback", useFallback.toString());
+				// Send image to /process-image
+				const formData = new FormData();
+				formData.append("file", file);
 
-			const ocrRes = await fetch(url.toString(), {
-				method: "POST",
-				body: formData,
-			});
+				// Build URL with query parameters
+				const url = new URL(API_ENDPOINTS.PROCESS_IMAGE);
+				url.searchParams.append("use_fallback", useFallback.toString());
 
-			if (!ocrRes.ok) {
-				throw new Error(`OCR processing failed: ${ocrRes.statusText}`);
+				const ocrRes = await fetch(url.toString(), {
+					method: "POST",
+					body: formData,
+				});
+
+				if (!ocrRes.ok) {
+					throw new Error(
+						`OCR processing failed for ${file.name}: ${ocrRes.statusText}`
+					);
+				}
+
+				const ocrData = await ocrRes.json();
+				console.log(`OCR response for ${file.name}:`, ocrData);
+
+				// Backend now returns paddleOCR directly
+				const transformedData: BackendResponse = {
+					paddleOCR: ocrData.paddleOCR || [],
+				};
+
+				// Add results to the store (this accumulates results instead of replacing)
+				setOCRResponse(transformedData, file.name);
 			}
 
-			const ocrData = await ocrRes.json();
-			console.log("Raw OCR response:", ocrData);
-
-			// Backend now returns paddleOCR directly
-			const transformedData: BackendResponse = {
-				paddleOCR: ocrData.paddleOCR || [],
-			};
-
-			setOCRResponse(transformedData, lastFile.name);
+			console.log(`Successfully processed ${selectedFiles.length} images`);
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "An unknown error occurred";
 			alert(`Error: ${errorMessage}`);
 			console.error(err);
-			setOCRResponse(null, "");
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			if (file.type.startsWith("image/")) {
-				onFileAdd(file);
-			} else {
-				alert("Please select an image file");
+		const files = e.target.files;
+		if (files && files.length > 0) {
+			const imageFiles = Array.from(files).filter((file) =>
+				file.type.startsWith("image/")
+			);
+
+			if (imageFiles.length === 0) {
+				alert("No image files found in the selected files");
 				e.target.value = "";
+				return;
+			}
+
+			if (imageFiles.length > 50) {
+				alert(
+					`Too many images selected (${imageFiles.length}). Maximum allowed is 50 images.`
+				);
+				e.target.value = "";
+				return;
+			}
+
+			// Clear previous files first when selecting new images
+			onFilesClear();
+
+			// Add all image files
+			imageFiles.forEach((file) => onFileAdd(file));
+
+			if (imageFiles.length < files.length) {
+				alert(
+					`Added ${imageFiles.length} image files. ${
+						files.length - imageFiles.length
+					} non-image files were skipped.`
+				);
 			}
 		}
 	};
@@ -247,6 +287,7 @@ const ControlPanel = ({
 					style={{ display: "none" }}
 					onChange={handleFileChange}
 					disabled={isLoading}
+					multiple
 				/>
 				<button
 					className="control-panel-button"
@@ -256,24 +297,24 @@ const ControlPanel = ({
 						selectedFiles.length > 0
 							? `${selectedFiles.length} image${
 									selectedFiles.length !== 1 ? "s" : ""
-							  } selected. Click to add more.`
-							: "Click to select an image"
+							  } selected. Click to select new images (will replace current selection).`
+							: "Click to select multiple images"
 					}
 				>
 					{selectedFiles.length === 0
-						? "Add Image"
-						: selectedFiles.length === 1
-						? selectedFiles[0].name.length > 20
-							? selectedFiles[0].name.substring(0, 17) + "..."
-							: selectedFiles[0].name
-						: `${selectedFiles.length} Images`}
+						? "Select Images"
+						: `${selectedFiles.length} Images Selected`}
 				</button>
 				<button
 					className="control-panel-button"
 					onClick={handleProcessImage}
 					disabled={selectedFiles.length === 0 || isLoading}
 				>
-					{isLoading ? "Processing..." : "Send Image"}
+					{isLoading
+						? "Processing Images..."
+						: selectedFiles.length === 1
+						? "Process Image"
+						: `Process ${selectedFiles.length} Images`}
 				</button>
 				<div className="control-panel-option">
 					<label>

@@ -214,33 +214,40 @@ const ImagePopup: React.FC<ImagePopupProps> = ({
 				{/* Vertical Manila folder tabs */}
 				{files.length > 1 && (
 					<div className="manila-tabs-container">
-						{files.slice(0, 6).map((file, index) => {
-							const tabSpacing = files.length <= 4 ? 3 : 0; // 3px gap if 4 or fewer tabs, tight if more
-							return (
-								<div
-									key={`${file.name}-${index}`}
-									className={`manila-tab ${
-										index === activeTabIndex ? "active" : ""
-									}`}
-									style={{
-										zIndex: index === activeTabIndex ? 10 : 9 - index,
-										top: `${index * (32 + tabSpacing)}px`,
-									}}
-									onClick={() => {
-										setActiveTabIndex(index);
-										// Reset zoom and rotation when switching tabs
-										setZoom(1);
-										setRotation(0);
-									}}
-									title={file.name}
-								>
-									<span className="manila-tab-number">{index + 1}</span>
-								</div>
-							);
-						})}
-						{files.length > 6 && (
-							<div className="manila-tab-overflow">+{files.length - 6}</div>
-						)}
+						<div className="manila-tabs-scroll">
+							{files.slice(0, 50).map((file, index) => {
+								// Use consistent tab height for better scrolling experience
+								const tabHeight = 24; // Fixed height for consistent appearance
+								const tabSpacing = 2; // Small gap between tabs
+
+								return (
+									<div
+										key={`${file.name}-${index}`}
+										className={`manila-tab ${
+											index === activeTabIndex ? "active" : ""
+										}`}
+										style={{
+											zIndex:
+												index === activeTabIndex ? 100 : 99 - (index % 50),
+											height: `${tabHeight}px`,
+											marginBottom: `${tabSpacing}px`,
+										}}
+										onClick={() => {
+											setActiveTabIndex(index);
+											// Reset zoom and rotation when switching tabs
+											setZoom(1);
+											setRotation(0);
+										}}
+										title={file.name}
+									>
+										<span className="manila-tab-number">{index + 1}</span>
+									</div>
+								);
+							})}
+							{files.length > 50 && (
+								<div className="manila-tab-overflow">+{files.length - 50}</div>
+							)}
+						</div>
 					</div>
 				)}
 				{/* Image area with scroll */}
