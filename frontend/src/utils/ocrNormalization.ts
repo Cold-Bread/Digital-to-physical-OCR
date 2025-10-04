@@ -1,4 +1,4 @@
-import { OCRResult } from "../types/Types";
+import { OCRResult } from "../types/backendResponse";
 
 /**
  * ENHANCED OCR NORMALIZATION

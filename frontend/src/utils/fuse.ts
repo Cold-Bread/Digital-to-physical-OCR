@@ -1,5 +1,5 @@
 import Fuse from "fuse.js";
-import { Patient, OCRResult } from "../types/Types";
+import { Patient, OCRResult } from "../types/backendResponse";
 
 // Enhanced match types for better clarity
 export type MatchQuality = "full" | "partial" | "none";
