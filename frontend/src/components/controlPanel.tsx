@@ -29,11 +29,23 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 	const undoAll = useOCRStore((s) => s.undoAll);
 	const history = useOCRStore((s) => s.history);
 	const patientList = useOCRStore((s) => s.patientList);
+	const isImageProcessed = useOCRStore((s) => s.isImageProcessed);
 
 	const handleSaveToSheet = async () => {
 		if (patientList.length === 0) {
 			alert("No records to save");
 			return;
+		}
+
+		// Confirmation prompt to prevent accidental saves
+		const boxNumber = patientList[0]?.box_number || "Unknown";
+		const recordCount = patientList.length;
+		const confirmMessage = `Are you sure you want to save ${recordCount} record${
+			recordCount !== 1 ? "s" : ""
+		} to Google Sheets for box ${boxNumber}?\n\nThis action will update the spreadsheet and cannot be easily undone.`;
+
+		if (!window.confirm(confirmMessage)) {
+			return; // User cancelled
 		}
 
 		setIsLoading(true);
@@ -138,6 +150,17 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 
 	const handleProcessImage = async () => {
 		if (!selectedFile) return;
+
+		// Check for duplicate image
+		if (isImageProcessed(selectedFile.name)) {
+			const shouldProceed = window.confirm(
+				`The image "${selectedFile.name}" has already been processed. Do you want to process it again? This will add duplicate results to the table.`
+			);
+			if (!shouldProceed) {
+				return;
+			}
+		}
+
 		console.log("Processing image:", selectedFile.name);
 		setIsLoading(true);
 
@@ -255,7 +278,7 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 			<button
 				className="image-popup-button"
 				onClick={() => setImagePopupOpen(true)}
-				disabled={!selectedFile || isLoading}
+				disabled={!selectedFile || isLoading || imagePopupOpen}
 			>
 				View Image
 			</button>
