@@ -2,7 +2,7 @@ import { Patient } from "../types/backendResponse";
 import { useOCRStore } from "../store/useOCRStore";
 import { useMemo } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import Fuse from "fuse.js";
+import { getBoxRowClass } from "../utils/fuse";
 import "./DataGrid.css";
 
 interface OCROutputsProps {
@@ -12,7 +12,22 @@ interface OCROutputsProps {
 
 const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 	const allOCRResults = useOCRStore((s) => s.allOCRResults || []);
-	const updateOCRResult = useOCRStore((s) => s.updateOCRResult);
+	const setPatientList = useOCRStore((s) => s.setPatientList);
+
+	// Debug logging for OCR data structure (only when we have results)
+	if (allOCRResults.length > 0) {
+		console.log("=== OCR DEBUG INFO ===");
+		console.log("Normalized OCR Results:", allOCRResults);
+		console.log(
+			"Sample names:",
+			allOCRResults.slice(0, 3).map((r) => ({
+				original: r.name,
+				dob: r.dob,
+				score: r.score,
+			}))
+		);
+		console.log("=======================");
+	}
 
 	// Debug logging for OCR data structure (only when we have results)
 	if (allOCRResults.length > 0) {
@@ -33,7 +48,7 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 		return allOCRResults;
 	}, [allOCRResults]);
 
-	// DataGrid columns for Patient (read-only)
+	// DataGrid columns for Patient (editable - this data goes to Google Sheets)
 	const boxColumns: GridColDef[] = [
 		{
 			field: "name",
@@ -41,8 +56,16 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 			flex: 1,
 			minWidth: 200,
 			maxWidth: 250,
+			editable: true,
 		},
-		{ field: "dob", headerName: "DOB", flex: 1, minWidth: 100, maxWidth: 150 },
+		{
+			field: "dob",
+			headerName: "DOB",
+			flex: 1,
+			minWidth: 100,
+			maxWidth: 150,
+			editable: true,
+		},
 		{
 			field: "year_joined",
 			headerName: "Year Joined",
@@ -51,6 +74,7 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 			maxWidth: 150,
 			type: "number",
 			valueFormatter: (value: number) => value?.toString() || "",
+			editable: true,
 		},
 		{
 			field: "last_dos",
@@ -60,6 +84,7 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 			maxWidth: 150,
 			type: "number",
 			valueFormatter: (value: number) => value?.toString() || "",
+			editable: true,
 		},
 		{
 			field: "shred_year",
@@ -69,6 +94,7 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 			maxWidth: 150,
 			type: "number",
 			valueFormatter: (value: number) => value?.toString() || "",
+			// shred_year is auto-calculated, not directly editable
 		},
 		{
 			field: "is_child_when_joined",
@@ -77,22 +103,28 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 			minWidth: 160,
 			maxWidth: 180,
 			type: "boolean",
+			editable: true,
 		},
-		{ field: "box_number", headerName: "Box Number", flex: 1, minWidth: 120 },
+		{
+			field: "box_number",
+			headerName: "Box Number",
+			flex: 1,
+			minWidth: 120,
+			editable: true,
+		},
 	];
 
 	const boxRows = boxData.map((row, idx) => ({ ...row, id: idx }));
 
-	// DataGrid columns for OCR (editable)
+	// DataGrid columns for OCR (read-only reference data)
 	const ocrColumns: GridColDef[] = [
 		{
 			field: "name",
 			headerName: "Name",
 			flex: 1,
 			maxWidth: 250,
-			editable: true,
 		},
-		{ field: "dob", headerName: "DOB", flex: 1, maxWidth: 150, editable: true },
+		{ field: "dob", headerName: "DOB", flex: 1, maxWidth: 150 },
 		{
 			field: "score",
 			headerName: "Confidence",
@@ -104,22 +136,40 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 	];
 	const ocrRows = ocrData.map((row, idx) => ({ ...row, id: idx }));
 
-	// Handle OCR cell edits - the proper way with processRowUpdate
-	const handleProcessRowUpdate = (newRow: any, oldRow: any) => {
-		console.log("🚀 Processing row update:", { newRow, oldRow });
+	// Calculate shred year based on other fields
+	const calculateShredYear = (yearJoined: number, lastDos: number): number => {
+		// Business logic: shred year = last DOS + retention period
+		// Adjust this calculation based on actual business rules
+		const retentionYears = 7; // Example: 7 year retention
+		return Math.max(lastDos + retentionYears, yearJoined + retentionYears);
+	};
 
-		const ocrResult = ocrData.find((r) => r.id === newRow.id);
-		if (ocrResult && ocrResult.id) {
-			// Find what changed
-			const changes: any = {};
-			Object.keys(newRow).forEach((key) => {
-				if (newRow[key] !== oldRow[key]) {
-					changes[key] = newRow[key];
-				}
-			});
+	// Handle Box Records edits - this data goes to Google Sheets
+	const handleBoxRowUpdate = (newRow: any, oldRow: any) => {
+		console.log("🚀 Processing box record update:", { newRow, oldRow });
 
-			console.log("📋 Changes detected:", changes);
-			updateOCRResult(ocrResult.id, changes);
+		// Auto-calculate shred year if year_joined or last_dos changed
+		if (
+			newRow.year_joined !== oldRow.year_joined ||
+			newRow.last_dos !== oldRow.last_dos
+		) {
+			newRow.shred_year = calculateShredYear(
+				newRow.year_joined || 0,
+				newRow.last_dos || 0
+			);
+			console.log("📅 Auto-calculated shred year:", newRow.shred_year);
+		}
+
+		// Update the patient list in the store
+		const updatedBoxData = [...boxData];
+		const rowIndex = newRow.id; // DataGrid uses array index as id
+
+		if (rowIndex >= 0 && rowIndex < updatedBoxData.length) {
+			// Update the specific patient record
+			updatedBoxData[rowIndex] = { ...updatedBoxData[rowIndex], ...newRow };
+			// Update the store - this will trigger re-render and prepare data for Google Sheets
+			setPatientList(updatedBoxData);
+			console.log("✅ Updated patient record:", updatedBoxData[rowIndex]);
 		}
 
 		return newRow; // Return the new row to confirm the update
@@ -138,34 +188,6 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 		);
 	}
 
-	// Fuzzy matching setup
-	const fuseOptions = {
-		keys: ["name", "dob"],
-		threshold: 0.3, // adjust for strictness
-		includeScore: true,
-	};
-	const fuse = new Fuse(boxData, fuseOptions);
-
-	// Fuzzy match status for each box row
-	const getBoxRowClass = (patient: Patient) => {
-		if (!patient || !patient.name) return "row-no-match";
-		// Find best fuzzy match from OCR results
-		let bestScore = 1;
-		let bestType: "match" | "partial" | "none" = "none";
-		for (const ocr of ocrData) {
-			const results = fuse.search({ name: ocr.name ?? "", dob: ocr.dob ?? "" });
-			if (results.length > 0) {
-				const score = results[0].score ?? 1;
-				if (score < 0.15) return "row-match"; // strong match
-				if (score < bestScore) {
-					bestScore = score;
-					bestType = "partial";
-				}
-			}
-		}
-		return bestType === "partial" ? "row-partial-match" : "row-no-match";
-	};
-
 	return (
 		<div className="outputs-container-main">
 			<div className="box-table-container">
@@ -176,7 +198,13 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 						columns={boxColumns}
 						hideFooter
 						disableRowSelectionOnClick
-						getRowClassName={(params) => getBoxRowClass(params.row)}
+						getRowClassName={(params) =>
+							getBoxRowClass(params.row, boxData, ocrData)
+						}
+						processRowUpdate={handleBoxRowUpdate}
+						onProcessRowUpdateError={(error) =>
+							console.error("Box record update error:", error)
+						}
 						rowHeight={40}
 						disableColumnResize={false}
 						autoHeight={false}
@@ -193,10 +221,6 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 						columns={ocrColumns}
 						hideFooter
 						disableRowSelectionOnClick
-						processRowUpdate={handleProcessRowUpdate}
-						onProcessRowUpdateError={(error) =>
-							console.error("Row update error:", error)
-						}
 						rowHeight={40}
 					/>
 				</div>

@@ -82,3 +82,38 @@ def update_sheet_range(range_name: str, values: List[List[str]]) -> bool:
     except Exception as e:
         logger.error(f"Error updating range '{range_name}' in spreadsheet '{SPREADSHEET_ID}': {e}")
         return False
+
+def batch_update_sheet_ranges(updates: List[dict]) -> dict:
+    """OPTIMIZATION: Batch update multiple ranges in a single API call"""
+    sheets = get_sheets_service()
+    if not sheets:
+        logger.error("Could not obtain Google Sheets service. Aborting batch update operation.")
+        return {'success': False, 'error': 'Could not connect to Google Sheets'}
+    
+    try:
+        logger.info(f"Starting batch update with {len(updates)} ranges")
+        
+        batch_update_body = {
+            'valueInputOption': 'USER_ENTERED',
+            'data': updates
+        }
+        
+        result = sheets.values().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body=batch_update_body
+        ).execute()
+        
+        updated_rows = result.get('totalUpdatedRows', 0)
+        updated_cells = result.get('totalUpdatedCells', 0)
+        
+        logger.info(f"Batch update completed: {updated_rows} rows, {updated_cells} cells")
+        return {
+            'success': True,
+            'updated_rows': updated_rows,
+            'updated_cells': updated_cells,
+            'result': result
+        }
+    
+    except Exception as e:
+        logger.error(f"Error in batch update: {e}")
+        return {'success': False, 'error': str(e)}

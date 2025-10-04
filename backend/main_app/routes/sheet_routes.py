@@ -1,21 +1,21 @@
 
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict
-from ..config.sheets_config import read_sheet_range, update_sheet_range
+from ..config.sheets_config import read_sheet_range, update_sheet_range, batch_update_sheet_ranges
 from ..models import Patient
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Constants
 SHEET_RANGE = "2025 Review!A2:G5000"  # Adjust as needed
-router = APIRouter()
 
-
-@router.post("/box/{box_number}")
+@router.api_route("/box/{box_number}", methods=["GET", "POST"])
 async def get_box_patients(box_number: str) -> List[Patient]:
     """Get patients from Google Sheets based on box number"""
+    logger.info(f"📦 Received request for box: {box_number}")
     logger.info(f"Attempting to read from range: {SHEET_RANGE}")
     values = read_sheet_range(SHEET_RANGE)
     if values is None:
@@ -31,7 +31,7 @@ async def get_box_patients(box_number: str) -> List[Patient]:
             try:
                 padded_row = row + [None] * (7 - len(row)) if len(row) < 7 else row
                 patient = Patient(
-                    box_number = padded_row[0],
+                    box_number = padded_row[0] or "",
                     name = padded_row[1] or "",
                     dob = padded_row[2] or "",
                     year_joined = int(padded_row[3] or 0),
@@ -69,13 +69,25 @@ async def update_records(patients: List[Patient]) -> dict:
             pos = box_counts.get(box_num, 0)
             row_lookup[(box_num, pos)] = i + 2  # 1-based index, +1 for header
             box_counts[box_num] = pos + 1
+    # OPTIMIZATION: Prepare batch update data instead of individual updates
+    batch_data = []
     updates = []
     box_input_counts: Dict[str, int] = {}
+    start_time = time.time()
+    
     for patient in patients:
         box_num = patient.box_number.strip().upper()
         pos = box_input_counts.get(box_num, 0)
         key = (box_num, pos)
         row_num = row_lookup.get(key)
+        
+        if not row_num:
+            logger.error(f"Could not find row for patient {patient.name} at position {pos} in box {patient.box_number}")
+            raise HTTPException(
+                status_code = 404,
+                detail = f"Position {pos} in box {patient.box_number} not found in sheet"
+            )
+        
         row_data = [
             patient.box_number,
             patient.name,
@@ -85,19 +97,34 @@ async def update_records(patients: List[Patient]) -> dict:
             patient.shred_year,
             True if patient.is_child_when_joined else None
         ]
-        if row_num:
-            range_name = f"2025 Review!A{row_num}:G{row_num}"
-            logger.info(f"Updating row {row_num} for patient {patient.name} in box {patient.box_number} at position {pos}")
-            success = update_sheet_range(range_name, [row_data])
-            if not success:
-                logger.error(f"Failed to update row {row_num} for patient {patient.name} in box {patient.box_number}")
-                raise HTTPException(status_code = 500, detail=f"Failed to update patient {patient.name} in box {patient.box_number}")
-            updates.append(f"Updated {patient.name} in box {patient.box_number}")
-        else:
-            logger.error(f"Could not find row for patient {patient.name} at position {pos} in box {patient.box_number}")
-            raise HTTPException(
-                status_code = 404,
-                detail = f"Position {pos} in box {patient.box_number} not found in sheet"
-            )
+        
+        # Add to batch instead of individual update
+        batch_data.append({
+            'range': f"2025 Review!A{row_num}:G{row_num}",
+            'values': [row_data]
+        })
+        
+        updates.append(f"Updated {patient.name} in box {patient.box_number}")
         box_input_counts[box_num] = pos + 1
-    return {"message": f"Records updated successfully: {', '.join(updates)}"}
+    
+    # OPTIMIZATION: Single batch update API call
+    logger.info(f"Starting batch update for {len(batch_data)} records")
+    batch_result = batch_update_sheet_ranges(batch_data)
+    
+    if not batch_result['success']:
+        logger.error(f"Batch update failed: {batch_result.get('error', 'Unknown error')}")
+        raise HTTPException(status_code = 500, detail=f"Failed to update records: {batch_result.get('error', 'Unknown error')}")
+    
+    total_time = time.time() - start_time
+    logger.info(f"Batch update completed in {total_time:.2f}s")
+    
+    # OPTIMIZATION: Return updated patients to avoid frontend refresh
+    return {
+        "message": f"Records updated successfully: {', '.join(updates)}",
+        "updated_patients": patients,
+        "performance": {
+            "total_time": f"{total_time:.2f}s",
+            "rows_updated": batch_result.get('updated_rows', 0),
+            "cells_updated": batch_result.get('updated_cells', 0)
+        }
+    }
