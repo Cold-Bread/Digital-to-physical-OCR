@@ -1,8 +1,8 @@
-import { Patient } from "../types/backendResponse";
+import { Patient } from "../types/Types";
 import { useOCRStore } from "../store/useOCRStore";
 import { useMemo } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { getBoxRowClass, createAlignedOCRTable } from "../utils/fuse";
+import { getBoxRowClass, createAlignedOCRTable } from "../utils/matchingUtils";
 import "./DataGrid.css";
 
 interface OCROutputsProps {
