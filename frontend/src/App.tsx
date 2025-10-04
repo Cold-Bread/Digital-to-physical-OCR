@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ControlPanel from "./components/ControlPanel";
+import ControlPanel from "./components/controlPanel";
 import OCROutputs from "./components/OCROutputs";
 import { useOCRStore } from "./store/useOCRStore";
 
