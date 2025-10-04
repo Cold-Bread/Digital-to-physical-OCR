@@ -4,52 +4,50 @@ import { Patient, OCRResult } from "../types/backendResponse";
 // --- Fuzzy matching function ---
 export const getBoxRowClass = (
 	patient: Patient,
-	boxData: Patient[],
+	boxData: Patient[], // Keep for interface consistency even if unused
 	ocrData: OCRResult[]
 ): string => {
 	if (!patient || !patient.name) return "row-no-match";
 
-	// Fuzzy matching setup
+	// Fuzzy matching setup - search within OCR data for matches to this patient
 	const fuseOptions = {
 		keys: ["name", "dob"],
-		threshold: 0.3, // adjust for strictness
+		threshold: 0.4, // adjust for strictness (0.4 = more lenient than before)
 		includeScore: true,
 	};
-	const fuse = new Fuse(boxData, fuseOptions);
+	const fuse = new Fuse(ocrData, fuseOptions);
 
 	let bestScore = 1; // lower = better
+	let hasNameMatch = false;
+	let hasDobMatch = false;
 
-	for (const ocr of ocrData) {
-		// Track scores separately
-		let scores: number[] = [];
-
-		// --- Name matching ---
-		if (ocr.name) {
-			const nameResults = fuse.search(ocr.name);
-			if (nameResults.length > 0) {
-				scores.push(nameResults[0].score ?? 1);
-			}
-		}
-
-		// --- DOB matching ---
-		if (ocr.dob) {
-			const dobResults = fuse.search(ocr.dob);
-			if (dobResults.length > 0) {
-				scores.push(dobResults[0].score ?? 1);
-			}
-		}
-
-		// Keep the best score from this OCR entry
-		if (scores.length > 0) {
-			const minScore = Math.min(...scores);
-			if (minScore < bestScore) {
-				bestScore = minScore;
+	// Search for this patient's name in OCR results
+	if (patient.name) {
+		const nameResults = fuse.search(patient.name);
+		if (nameResults.length > 0) {
+			const nameScore = nameResults[0].score ?? 1;
+			if (nameScore < bestScore) {
+				bestScore = nameScore;
+				hasNameMatch = true;
 			}
 		}
 	}
 
-	// Classify match strength
-	if (bestScore < 0.2) return "row-match"; // strong match
+	// Search for this patient's DOB in OCR results
+	if (patient.dob) {
+		const dobResults = fuse.search(patient.dob);
+		if (dobResults.length > 0) {
+			const dobScore = dobResults[0].score ?? 1;
+			if (dobScore < bestScore) {
+				bestScore = dobScore;
+				hasDobMatch = true;
+			}
+		}
+	}
+
+	// Enhanced classification considering both name and DOB matches
+	if (bestScore < 0.15) return "row-match"; // very strong match
+	if (bestScore < 0.3 && (hasNameMatch || hasDobMatch)) return "row-match"; // good match with either field
 	if (bestScore < 0.4) return "row-partial-match"; // fuzzy but plausible
 	return "row-no-match"; // nothing close
 };

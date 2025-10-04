@@ -4,40 +4,41 @@
 	display: flex;
 	flex-direction: row;
 	gap: 12px;
-	height: 100vh;
 	width: 100%;
-	overflow: auto;
 	background-color: #121212; /* slightly darker background */
 	color: #ffffff;
 	font-family: "Inter", "Roboto", sans-serif;
+	/* Removed flex: 1 and overflow-y to allow natural height expansion */
 }
 
 .box-table-container,
 .ocr-table-container {
 	display: flex;
 	flex-direction: column;
-	min-height: 0;
 	border-radius: 12px;
 	padding: 12px;
 	background-color: #1c1c1c;
 	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+	min-height: 0; /* Allow containers to shrink */
+	overflow: visible; /* Allow content to be visible */
 }
 
 .box-table-container {
-	flex: 7;
-	max-width: 70vw;
+	flex: 7; /* 70% of available width */
+	min-width: 0; /* Allow flex item to shrink below content size */
 }
 .ocr-table-container {
-	flex: 3;
-	max-width: 30vw;
+	flex: 3; /* 30% of available width */
+	min-width: 0; /* Allow flex item to shrink below content size */
 }
 
 /* --- Table Content --- */
 .table-content {
-	flex: 1;
 	width: 100%;
-	min-height: 0;
-	overflow: hidden;
+	flex: 1; /* Take remaining space in container */
+	display: flex;
+	flex-direction: column;
+	min-height: 0; /* Allow container to work with flex properly */
 }
 
 h3 {
@@ -113,6 +114,17 @@ h3 {
 
 .row-no-match {
 	background-color: transparent;
+}
+
+/* --- OCR Result Row Styling --- */
+.ocr-row-matched {
+	background-color: rgba(76, 175, 80, 0.1) !important;
+	border-left: 3px solid #4caf50 !important;
+}
+
+.ocr-row-unmatched {
+	background-color: rgba(244, 67, 54, 0.1) !important;
+	border-left: 3px solid #f44336 !important;
 }
 
 /* --- Boolean Icon Overrides --- */

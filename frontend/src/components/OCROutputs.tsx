@@ -1,4 +1,4 @@
-import { Patient } from "../types/backendResponse";
+import { Patient, OCRResult } from "../types/backendResponse";
 import { useOCRStore } from "../store/useOCRStore";
 import { useMemo } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
@@ -44,8 +44,31 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 		console.log("=====================");
 	}
 
+	// Create enumerated image source mapping
+	const imageSourceMapping = useMemo(() => {
+		const uniqueSources = Array.from(
+			new Set(allOCRResults.map((r) => r.imageSource).filter(Boolean))
+		);
+		const mapping = new Map<string, string>();
+		uniqueSources.forEach((source, index) => {
+			mapping.set(source!, `${index + 1}`);
+		});
+		return mapping;
+	}, [allOCRResults]);
+
 	const ocrData = useMemo(() => {
-		return allOCRResults;
+		// Sort OCR results: matched results first (ordered by patient index), then unmatched
+		const matched = allOCRResults
+			.filter((result) => result.matchedPatientIndex !== undefined)
+			.sort(
+				(a, b) => (a.matchedPatientIndex || 0) - (b.matchedPatientIndex || 0)
+			);
+
+		const unmatched = allOCRResults.filter(
+			(result) => result.matchedPatientIndex === undefined
+		);
+
+		return [...matched, ...unmatched];
 	}, [allOCRResults]);
 
 	// DataGrid columns for Patient (editable - this data goes to Google Sheets)
@@ -122,6 +145,7 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 			field: "name",
 			headerName: "Name",
 			flex: 1,
+			minWidth: 200,
 			maxWidth: 250,
 		},
 		{ field: "dob", headerName: "DOB", flex: 1, maxWidth: 150 },
@@ -132,6 +156,15 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 			maxWidth: 150,
 			valueFormatter: (value: number) =>
 				value ? `${(value * 100).toFixed(1)}%` : "N/A",
+		},
+		{
+			field: "imageSource",
+			headerName: "Image",
+			flex: 1,
+			maxWidth: 120,
+			valueFormatter: (value: string) => {
+				return value ? imageSourceMapping.get(value) || "Unknown" : "N/A";
+			},
 		},
 	];
 	const ocrRows = ocrData.map((row, idx) => ({ ...row, id: idx }));
@@ -207,7 +240,7 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 						}
 						rowHeight={40}
 						disableColumnResize={false}
-						autoHeight={false}
+						autoHeight={true}
 						disableColumnMenu
 					/>
 				</div>
@@ -222,6 +255,13 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 						hideFooter
 						disableRowSelectionOnClick
 						rowHeight={40}
+						autoHeight={true}
+						getRowClassName={(params) => {
+							const result = params.row as OCRResult;
+							return result.matchedPatientIndex !== undefined
+								? "ocr-row-matched"
+								: "ocr-row-unmatched";
+						}}
 					/>
 				</div>
 			</div>

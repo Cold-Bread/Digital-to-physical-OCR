@@ -15,9 +15,11 @@ interface OCRStore {
 	// OCR results from image processing
 	ocrResponse: BackendResponse | null;
 	allOCRResults: OCRResult[]; // All OCR results across all scans
+	processedImages: Set<string>; // Track processed image names
 	setOCRResponse: (resp: BackendResponse | null, imageSource: string) => void;
 	addOCRResults: (results: OCRResult[], imageSource: string) => void;
 	updateOCRResult: (id: string, updatedResult: Partial<OCRResult>) => void;
+	isImageProcessed: (imageName: string) => boolean;
 
 	// Patient list response from box search
 	patientList: BoxResponse;
@@ -60,6 +62,12 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 	allOCRResults: [],
 	matchedResults: new Map(),
 	currentBoxNumber: "",
+	processedImages: new Set(),
+
+	// Check if image has been processed
+	isImageProcessed: (imageName) => {
+		return get().processedImages.has(imageName);
+	},
 
 	// Set OCR response and add results
 	setOCRResponse: (resp, imageSource) => {
@@ -69,6 +77,11 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 			console.warn("No OCR response provided");
 			return;
 		}
+
+		// Track this image as processed
+		const currentImages = new Set(get().processedImages);
+		currentImages.add(imageSource);
+		set({ processedImages: currentImages });
 
 		let ocrArray = null;
 
@@ -268,6 +281,7 @@ export const useOCRStore = create<OCRStore>((set, get) => ({
 			patientList: [],
 			isLoading: false,
 			history: [],
+			processedImages: new Set(),
 		});
 	},
 }));

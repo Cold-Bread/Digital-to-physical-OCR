@@ -25,6 +25,12 @@ Control Panel:
 
 Normailization:
 
+- make all names Camel Case (first last name properly caps)
+- remove all periods from both fields
+- increase the confidence threshold for allowing a result
+
+maybes:
+
 - add chronos and other lightweight library for easier and better data handling
 
 ---
@@ -32,6 +38,12 @@ Normailization:
 Bugs:
 
 - rename all files to follow proper naming conventions
+
+---
+
+Image Popup:
+
+- add tabs to see all images input. able to clear all images.
 
 ---
 
