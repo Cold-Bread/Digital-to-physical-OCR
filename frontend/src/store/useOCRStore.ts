@@ -1,10 +1,6 @@
 import { create } from "zustand";
-import {
-	BackendResponse,
-	BoxResponse,
-	OCRResult,
-} from "../types/backendResponse";
-import { normalizeOCRResults } from "../utils/ocrNormalization";
+import { BackendResponse, BoxResponse, OCRResult } from "../types/Types";
+import { normalizeOCRResults } from "../utils/ocrUtils";
 
 type EditHistory = {
 	patientList: BoxResponse;

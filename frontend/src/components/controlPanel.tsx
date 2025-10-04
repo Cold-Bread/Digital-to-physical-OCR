@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useOCRStore } from "../store/useOCRStore";
-import { BackendResponse, BoxResponse } from "../types/backendResponse";
+import { BackendResponse, BoxResponse } from "../types/Types";
 import ImagePopup from "./ImagePopup";
 
 // API endpoints configuration
