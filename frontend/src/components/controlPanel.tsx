@@ -37,6 +37,17 @@ const ControlPanel = ({ selectedFile, onFileSelect }: ControlPanelProps) => {
 			return;
 		}
 
+		// Confirmation prompt to prevent accidental saves
+		const boxNumber = patientList[0]?.box_number || "Unknown";
+		const recordCount = patientList.length;
+		const confirmMessage = `Are you sure you want to save ${recordCount} record${
+			recordCount !== 1 ? "s" : ""
+		} to Google Sheets for box ${boxNumber}?\n\nThis action will update the spreadsheet and cannot be easily undone.`;
+
+		if (!window.confirm(confirmMessage)) {
+			return; // User cancelled
+		}
+
 		setIsLoading(true);
 		try {
 			// Get the current box number from the first patient

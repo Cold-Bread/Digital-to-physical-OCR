@@ -8,18 +8,9 @@ pagnation:
 
 table changes:
 
-- make ocr table same num rows as box table
-- revamp row highlighting:
-  - red: no match (defualt if no OCR response or .5 or lower confidence)
-  - Orange: itermediate match (.5-.75)
-  - Green: best or perfect match (.76-.999~)
-
----
+- solve column sizing issues
 
 Control Panel:
-
-- new button layout should be as follows:
-  boxNum text input, getBox button, image input button, send image, vertical divider, undo, undo all, vertical divider, submit to sheet, view image (hugs right wall)
 
 ---
 
@@ -27,9 +18,9 @@ Normailization:
 
 - make all names Camel Case (first last name properly caps)
 - remove all periods from both fields
-- increase the confidence threshold for allowing a result
+- fiddle with the confidence threshold for allowing a result
 
-maybes:
+maybe normalization:
 
 - add chronos and other lightweight library for easier and better data handling
 
@@ -48,5 +39,3 @@ Image Popup:
 ---
 
 BACKEND FETURE REQUESTS:
-
-- remove all instances of ocr1-3. change to paddle OCR (make seperate branch and fix both front and backend)

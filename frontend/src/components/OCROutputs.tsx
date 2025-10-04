@@ -1,8 +1,8 @@
-import { Patient, OCRResult } from "../types/backendResponse";
+import { Patient } from "../types/backendResponse";
 import { useOCRStore } from "../store/useOCRStore";
 import { useMemo } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { getBoxRowClass } from "../utils/fuse";
+import { getBoxRowClass, createAlignedOCRTable } from "../utils/fuse";
 import "./DataGrid.css";
 
 interface OCROutputsProps {
@@ -56,20 +56,10 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 		return mapping;
 	}, [allOCRResults]);
 
-	const ocrData = useMemo(() => {
-		// Sort OCR results: matched results first (ordered by patient index), then unmatched
-		const matched = allOCRResults
-			.filter((result) => result.matchedPatientIndex !== undefined)
-			.sort(
-				(a, b) => (a.matchedPatientIndex || 0) - (b.matchedPatientIndex || 0)
-			);
-
-		const unmatched = allOCRResults.filter(
-			(result) => result.matchedPatientIndex === undefined
-		);
-
-		return [...matched, ...unmatched];
-	}, [allOCRResults]);
+	// NEW: Create aligned OCR table that matches box records table structure
+	const alignedOCRData = useMemo(() => {
+		return createAlignedOCRTable(boxData, allOCRResults);
+	}, [boxData, allOCRResults]);
 
 	// DataGrid columns for Patient (editable - this data goes to Google Sheets)
 	const boxColumns: GridColDef[] = [
@@ -167,7 +157,21 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 			},
 		},
 	];
-	const ocrRows = ocrData.map((row, idx) => ({ ...row, id: idx }));
+
+	// Create OCR rows from aligned data, handling null entries
+	const ocrRows = alignedOCRData.map((row, idx) => {
+		if (row === null) {
+			// Create empty placeholder row for alignment
+			return {
+				id: idx,
+				name: "",
+				dob: "",
+				score: undefined,
+				imageSource: "",
+			};
+		}
+		return { ...row, id: idx };
+	});
 
 	// Calculate shred year based on other fields
 	const calculateShredYear = (yearJoined: number, lastDos: number): number => {
@@ -213,7 +217,7 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 		console.log("OCR Rows for DataGrid:", ocrRows);
 		console.log(
 			"OCR Rows sample score values:",
-			ocrRows.map((r) => ({
+			ocrRows.map((r: any) => ({
 				name: r.name,
 				score: r.score,
 				scoreType: typeof r.score,
@@ -232,7 +236,7 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 						hideFooter
 						disableRowSelectionOnClick
 						getRowClassName={(params) =>
-							getBoxRowClass(params.row, boxData, ocrData)
+							getBoxRowClass(params.row, boxData, allOCRResults)
 						}
 						processRowUpdate={handleBoxRowUpdate}
 						onProcessRowUpdateError={(error) =>
@@ -257,10 +261,33 @@ const OCROutputs = ({ boxData = [] }: OCROutputsProps) => {
 						rowHeight={40}
 						autoHeight={true}
 						getRowClassName={(params) => {
-							const result = params.row as OCRResult;
-							return result.matchedPatientIndex !== undefined
-								? "ocr-row-matched"
-								: "ocr-row-unmatched";
+							const row = params.row;
+							const rowIndex = params.id as number;
+
+							// Empty row (placeholder for alignment)
+							if (!row.name && !row.dob) {
+								return "ocr-row-empty";
+							}
+
+							// Check if this row index corresponds to a patient match
+							if (rowIndex < boxData.length) {
+								const patient = boxData[rowIndex];
+								const matchClass = getBoxRowClass(
+									patient,
+									boxData,
+									allOCRResults
+								);
+
+								// If patient has a match, this OCR row should show as matched
+								if (matchClass === "row-match") {
+									return "ocr-row-matched";
+								} else if (matchClass === "row-partial-match") {
+									return "ocr-row-partial-matched";
+								}
+							}
+
+							// Unmatched OCR result
+							return "ocr-row-unmatched";
 						}}
 					/>
 				</div>

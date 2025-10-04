@@ -122,9 +122,20 @@ h3 {
 	border-left: 3px solid #4caf50 !important;
 }
 
+.ocr-row-partial-matched {
+	background-color: rgba(255, 193, 7, 0.1) !important;
+	border-left: 3px solid #ffc107 !important;
+}
+
 .ocr-row-unmatched {
 	background-color: rgba(244, 67, 54, 0.1) !important;
 	border-left: 3px solid #f44336 !important;
+}
+
+.ocr-row-empty {
+	background-color: rgba(128, 128, 128, 0.05) !important;
+	border-left: 3px solid #666 !important;
+	opacity: 0.6;
 }
 
 /* --- Boolean Icon Overrides --- */
